@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clawd widget — preview</title>
+  <link rel="stylesheet" href="sprites.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { background:
+      linear-gradient(45deg,#d9d2cb 25%,transparent 25%) -10px 0/20px 20px,
+      linear-gradient(-45deg,#d9d2cb 25%,transparent 25%) -10px 0/20px 20px,
+      linear-gradient(45deg,transparent 75%,#d9d2cb 75%) -10px 0/20px 20px,
+      linear-gradient(-45deg,transparent 75%,#d9d2cb 75%) -10px 0/20px 20px,
+      #eee9e3;
+    }
+    #bar { position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 8px; z-index: 99; background: #fff7ef;
+      border: 2px solid #2b1a12; border-radius: 12px; padding: 8px;
+      font: 600 13px ui-rounded, system-ui, sans-serif; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+    #bar button { font: inherit; cursor: pointer; border: 2px solid #2b1a12; background: #e07a5f; color: #fff7ef; border-radius: 8px; padding: 6px 10px; }
+    #bar button:hover { background: #c75c41; }
+    #note { position: fixed; bottom: 8px; left: 50%; transform: translateX(-50%); font: 500 12px ui-rounded,system-ui,sans-serif; color:#5b4a40; text-align:center; }
+    #toast { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background:#2b1a12; color:#fff7ef; padding:8px 14px; border-radius:8px; font:600 12.5px system-ui; opacity:0; transition:opacity .2s; z-index:99; }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div id="bar">
+    <span style="align-self:center;color:#2b1a12;margin:0 4px">State:</span>
+    <button data-s="default">Default</button>
+    <button data-s="working">Working</button>
+    <button data-s="complex">Complex</button>
+    <button data-s="question">Question</button>
+    <button data-s="lorem">Lorem (long)</button>
+    <button data-s="bashperm">Bash perm</button>
+    <button data-s="launch">Launch</button>
+    <button data-s="done">Done</button>
+  </div>
+  <div id="toast"></div>
+  <div id="note">Hover Clawd for the bubble · drag him to any edge — the bubble re-positions to stay on screen · browser preview (the real widget floats on top via Electron)</div>
+
+  <div id="root">
+    <div id="hot" class="hot"><div id="sprite" class="sprite-host"></div></div>
+    <div id="bubble" class="bubble hidden">
+      <div id="bubbleText" class="bubble-text"></div>
+      <div id="options" class="options"></div>
+      <div class="bubble-tail"></div>
+    </div>
+  </div>
+
+  <script>
+    let _cb = null, _env = null, _launchCb = null
+    function toast (msg) {
+      const t = document.getElementById('toast')
+      t.textContent = msg; t.classList.add('show')
+      clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 1600)
+    }
+    function vp () { return { display: { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight } } }
+    // In preview, renderer.js sizes/positions #root itself (isElectron=false),
+    // so setBounds is a no-op. The viewport stands in for the screen.
+    window.clawd = {
+      isElectron: false,
+      onState: (cb) => { _cb = cb },
+      onEnv: (cb) => { _env = cb; cb(vp()) },
+      setBounds: () => {},
+      setIgnoreMouse: () => {},
+      focusClaude: () => toast('-> would switch to the Claude app'),
+      answer: (p) => toast('-> answer recorded: "' + p.choice + '" (then opens Claude)'),
+      sendChoice: (n) => toast('-> would type "' + n + '" into the CLI (no Enter)'),
+      idleClick: () => toast('-> would focus Claude, or offer to launch if none running'),
+      launchClaude: (t) => toast('-> would launch ' + (t === 'desktop' ? 'Claude Desktop' : 'Claude Code CLI')),
+      onLaunchPrompt: (cb) => { _launchCb = cb }
+    }
+    window.addEventListener('resize', () => { if (_env) _env(vp()) })
+    const SAMPLES = {
+      default: { state: 'default' },
+      working: { state: 'working', status: 'Reading files...' },
+      complex: { state: 'complex', status: 'Coordinating subagents...' },
+      question: { state: 'question', question: 'Which approach should I take?', options: ['Quick fix', 'Full refactor', 'Other'] },
+      lorem: { state: 'question', question: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation?', options: ['Lorem ipsum dolor sit amet consectetur adipiscing elit', 'Ut enim ad minim veniam quis nostrud exercitation ullamco', 'No', 'Other'] },
+      // Mirrors what set-state.js produces for a Bash permission prompt: orange-highlighted
+      // tool + command (accent), and the real scraped options as clickable buttons.
+      bashperm: { state: 'question', question: 'Allow Bash: cmd.exe /c start "" preview.html?', accent: ['Bash', 'cmd.exe /c start "" preview.html'], options: ['Yes', 'Yes, and do not ask again for: cmd.exe:*', 'No'] },
+      done: { state: 'done' }
+    }
+    document.getElementById('bar').addEventListener('click', (e) => {
+      const s = e.target.getAttribute('data-s'); if (!s || !_cb) return
+      // 'launch' isn't a hook-driven state -- it's surfaced via onLaunchPrompt, same as
+      // the real widget receives it from main on startup / idle click.
+      if (s === 'launch') { if (_launchCb) _launchCb(); return }
+      _cb(SAMPLES[s])
+    })
+  </script>
+  <script src="sprites.js"></script>
+  <script src="renderer.js"></script>
+  <script>
+    var boot = setInterval(function () { if (_cb) { clearInterval(boot); _cb(SAMPLES.default) } }, 50)
+  </script>
+</body>
+</html>

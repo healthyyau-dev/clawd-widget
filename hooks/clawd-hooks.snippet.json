@@ -1,0 +1,31 @@
+{
+  "_comment": "Merge the `hooks` block into your ~/.claude/settings.json. Replace __ABS__ with the absolute path to set-state.js (run install-hooks.js to do this automatically and safely).",
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "node __ABS__/set-state.js default --launch-widget" } ] }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "command": "node __ABS__/set-state.js working --reset" } ] }
+    ],
+    "PreToolUse": [
+      { "matcher": "AskUserQuestion", "hooks": [ { "type": "command", "command": "node __ABS__/set-state.js question" } ] },
+      { "matcher": "Task", "hooks": [ { "type": "command", "command": "node __ABS__/set-state.js complex" } ] },
+      { "matcher": "*", "hooks": [ { "type": "command", "command": "node __ABS__/set-state.js working" } ] }
+    ],
+    "SubagentStart": [
+      { "hooks": [ { "type": "command", "command": "node __ABS__/set-state.js complex" } ] }
+    ],
+    "Notification": [
+      { "hooks": [ { "type": "command", "command": "node __ABS__/set-state.js question" } ] }
+    ],
+    "PermissionRequest": [
+      { "hooks": [ { "type": "command", "command": "node __ABS__/set-state.js question perm" } ] }
+    ],
+    "PostToolUse": [
+      { "hooks": [ { "type": "command", "command": "node __ABS__/set-state.js working --after-tool" } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "node __ABS__/set-state.js done" } ] }
+    ]
+  }
+}

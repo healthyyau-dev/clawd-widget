@@ -1,0 +1,137 @@
+/* ===== bubble ===== */
+.sprite.spr-bubble g { opacity: 0; }
+.sprite.spr-bubble .p0 { opacity: 1; }
+@keyframes bubble-p0 { 0.0% {opacity:1;} 4.34% {opacity:1;} 4.35% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-bubble .p0 { animation: bubble-p0 2300ms step-end infinite; }
+@keyframes bubble-p1 { 0% {opacity:0;} 4.34% {opacity:0;} 4.35% {opacity:1;} 13.03% {opacity:1;} 13.04% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-bubble .p1 { animation: bubble-p1 2300ms step-end infinite; }
+@keyframes bubble-p2 { 0% {opacity:0;} 13.03% {opacity:0;} 13.04% {opacity:1;} 21.73% {opacity:1;} 21.74% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-bubble .p2 { animation: bubble-p2 2300ms step-end infinite; }
+@keyframes bubble-p3 { 0% {opacity:0;} 21.73% {opacity:0;} 21.74% {opacity:1;} 30.42% {opacity:1;} 30.43% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-bubble .p3 { animation: bubble-p3 2300ms step-end infinite; }
+@keyframes bubble-p4 { 0% {opacity:0;} 30.42% {opacity:0;} 30.43% {opacity:1;} 39.12% {opacity:1;} 39.13% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-bubble .p4 { animation: bubble-p4 2300ms step-end infinite; }
+@keyframes bubble-p5 { 0% {opacity:0;} 39.12% {opacity:0;} 39.13% {opacity:1;} 47.82% {opacity:1;} 47.83% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-bubble .p5 { animation: bubble-p5 2300ms step-end infinite; }
+@keyframes bubble-p6 { 0% {opacity:0;} 47.82% {opacity:0;} 47.83% {opacity:1;} 56.51% {opacity:1;} 56.52% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-bubble .p6 { animation: bubble-p6 2300ms step-end infinite; }
+@keyframes bubble-p7 { 0% {opacity:0;} 56.51% {opacity:0;} 56.52% {opacity:1;} 65.21% {opacity:1;} 65.22% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-bubble .p7 { animation: bubble-p7 2300ms step-end infinite; }
+@keyframes bubble-p8 { 0% {opacity:0;} 65.21% {opacity:0;} 65.22% {opacity:1;} 73.9% {opacity:1;} 73.91% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-bubble .p8 { animation: bubble-p8 2300ms step-end infinite; }
+@keyframes bubble-p9 { 0% {opacity:0;} 73.9% {opacity:0;} 73.91% {opacity:1;} 82.6% {opacity:1;} 82.61% {opacity:0;} 91.29% {opacity:0;} 91.3% {opacity:1;} 99.99% {opacity:1;} }
+.sprite.spr-bubble .p9 { animation: bubble-p9 2300ms step-end infinite; }
+@keyframes bubble-p10 { 0% {opacity:0;} 82.6% {opacity:0;} 82.61% {opacity:1;} 91.29% {opacity:1;} 91.3% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-bubble .p10 { animation: bubble-p10 2300ms step-end infinite; }
+@media (prefers-reduced-motion: reduce) { .sprite.spr-bubble g { animation: none; } }
+/* ===== think ===== */
+.sprite.spr-think g { opacity: 0; }
+.sprite.spr-think .p0 { opacity: 1; }
+@keyframes think-p0 { 0.0% {opacity:1;} 3.99% {opacity:1;} 4.0% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-think .p0 { animation: think-p0 2500ms step-end infinite; }
+@keyframes think-p1 { 0% {opacity:0;} 3.99% {opacity:0;} 4.0% {opacity:1;} 11.99% {opacity:1;} 12.0% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-think .p1 { animation: think-p1 2500ms step-end infinite; }
+@keyframes think-p2 { 0% {opacity:0;} 11.99% {opacity:0;} 12.0% {opacity:1;} 19.99% {opacity:1;} 20.0% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-think .p2 { animation: think-p2 2500ms step-end infinite; }
+@keyframes think-p3 { 0% {opacity:0;} 19.99% {opacity:0;} 20.0% {opacity:1;} 27.99% {opacity:1;} 28.0% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-think .p3 { animation: think-p3 2500ms step-end infinite; }
+@keyframes think-p4 { 0% {opacity:0;} 27.99% {opacity:0;} 28.0% {opacity:1;} 35.99% {opacity:1;} 36.0% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-think .p4 { animation: think-p4 2500ms step-end infinite; }
+@keyframes think-p5 { 0% {opacity:0;} 35.99% {opacity:0;} 36.0% {opacity:1;} 43.99% {opacity:1;} 44.0% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-think .p5 { animation: think-p5 2500ms step-end infinite; }
+@keyframes think-p6 { 0% {opacity:0;} 43.99% {opacity:0;} 44.0% {opacity:1;} 51.99% {opacity:1;} 52.0% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-think .p6 { animation: think-p6 2500ms step-end infinite; }
+@keyframes think-p7 { 0% {opacity:0;} 51.99% {opacity:0;} 52.0% {opacity:1;} 59.99% {opacity:1;} 60.0% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-think .p7 { animation: think-p7 2500ms step-end infinite; }
+@keyframes think-p8 { 0% {opacity:0;} 59.99% {opacity:0;} 60.0% {opacity:1;} 67.99% {opacity:1;} 68.0% {opacity:0;} 75.99% {opacity:0;} 76.0% {opacity:1;} 83.99% {opacity:1;} 84.0% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-think .p8 { animation: think-p8 2500ms step-end infinite; }
+@keyframes think-p9 { 0% {opacity:0;} 67.99% {opacity:0;} 68.0% {opacity:1;} 75.99% {opacity:1;} 76.0% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-think .p9 { animation: think-p9 2500ms step-end infinite; }
+@keyframes think-p10 { 0% {opacity:0;} 83.99% {opacity:0;} 84.0% {opacity:1;} 91.99% {opacity:1;} 92.0% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-think .p10 { animation: think-p10 2500ms step-end infinite; }
+@keyframes think-p11 { 0% {opacity:0;} 91.99% {opacity:0;} 92.0% {opacity:1;} 99.99% {opacity:1;} }
+.sprite.spr-think .p11 { animation: think-p11 2500ms step-end infinite; }
+@media (prefers-reduced-motion: reduce) { .sprite.spr-think g { animation: none; } }
+/* ===== working ===== */
+.sprite.spr-working g { opacity: 0; }
+.sprite.spr-working .p0 { opacity: 1; }
+@keyframes working-p0 { 0.0% {opacity:1;} 6.66% {opacity:1;} 6.67% {opacity:0;} 46.66% {opacity:0;} 46.67% {opacity:1;} 59.99% {opacity:1;} 60.0% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-working .p0 { animation: working-p0 1500ms step-end infinite; }
+@keyframes working-p1 { 0% {opacity:0;} 6.66% {opacity:0;} 6.67% {opacity:1;} 19.99% {opacity:1;} 20.0% {opacity:0;} 59.99% {opacity:0;} 60.0% {opacity:1;} 73.32% {opacity:1;} 73.33% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-working .p1 { animation: working-p1 1500ms step-end infinite; }
+@keyframes working-p2 { 0% {opacity:0;} 19.99% {opacity:0;} 20.0% {opacity:1;} 33.32% {opacity:1;} 33.33% {opacity:0;} 73.32% {opacity:0;} 73.33% {opacity:1;} 86.66% {opacity:1;} 86.67% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-working .p2 { animation: working-p2 1500ms step-end infinite; }
+@keyframes working-p3 { 0% {opacity:0;} 33.32% {opacity:0;} 33.33% {opacity:1;} 46.66% {opacity:1;} 46.67% {opacity:0;} 86.66% {opacity:0;} 86.67% {opacity:1;} 99.99% {opacity:1;} }
+.sprite.spr-working .p3 { animation: working-p3 1500ms step-end infinite; }
+@media (prefers-reduced-motion: reduce) { .sprite.spr-working g { animation: none; } }
+/* ===== idea ===== */
+.sprite.spr-idea g { opacity: 0; }
+.sprite.spr-idea .p0 { opacity: 1; }
+@keyframes idea-p0 { 0.0% {opacity:1;} 9.08% {opacity:1;} 9.09% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-idea .p0 { animation: idea-p0 1100ms step-end infinite; }
+@keyframes idea-p1 { 0% {opacity:0;} 9.08% {opacity:0;} 9.09% {opacity:1;} 27.26% {opacity:1;} 27.27% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-idea .p1 { animation: idea-p1 1100ms step-end infinite; }
+@keyframes idea-p2 { 0% {opacity:0;} 27.26% {opacity:0;} 27.27% {opacity:1;} 45.44% {opacity:1;} 45.45% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-idea .p2 { animation: idea-p2 1100ms step-end infinite; }
+@keyframes idea-p3 { 0% {opacity:0;} 45.44% {opacity:0;} 45.45% {opacity:1;} 63.63% {opacity:1;} 63.64% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-idea .p3 { animation: idea-p3 1100ms step-end infinite; }
+@keyframes idea-p4 { 0% {opacity:0;} 63.63% {opacity:0;} 63.64% {opacity:1;} 81.81% {opacity:1;} 81.82% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-idea .p4 { animation: idea-p4 1100ms step-end infinite; }
+@keyframes idea-p5 { 0% {opacity:0;} 81.81% {opacity:0;} 81.82% {opacity:1;} 99.99% {opacity:1;} }
+.sprite.spr-idea .p5 { animation: idea-p5 1100ms step-end infinite; }
+@media (prefers-reduced-motion: reduce) { .sprite.spr-idea g { animation: none; } }
+/* ===== mascot ===== */
+/* ClawdMascot - mascot CSS copied verbatim from PipelineHero.module.css so
+   the AGENTS.md hero reuses the identical reskin-case sprite. Class +
+   keyframe names are CSS-module-scoped, so they don't collide. */
+
+.sprite.spr-mascot g { opacity: 0; }
+.sprite.spr-mascot .p0 { opacity: 1; }
+@keyframes mascot-p0 { 0.0% {opacity:1;} 3.01% {opacity:1;} 3.02% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p0 { animation: mascot-p0 3310ms step-end infinite; }
+@keyframes mascot-p1 { 0% {opacity:0;} 3.01% {opacity:0;} 3.02% {opacity:1;} 6.03% {opacity:1;} 6.04% {opacity:0;} 8.15% {opacity:0;} 8.16% {opacity:1;} 11.17% {opacity:1;} 11.18% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p1 { animation: mascot-p1 3310ms step-end infinite; }
+@keyframes mascot-p2 { 0% {opacity:0;} 6.03% {opacity:0;} 6.04% {opacity:1;} 8.15% {opacity:1;} 8.16% {opacity:0;} 11.17% {opacity:0;} 11.18% {opacity:1;} 16.0% {opacity:1;} 16.01% {opacity:0;} 86.7% {opacity:0;} 86.71% {opacity:1;} 91.53% {opacity:1;} 91.54% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p2 { animation: mascot-p2 3310ms step-end infinite; }
+@keyframes mascot-p3 { 0% {opacity:0;} 16.0% {opacity:0;} 16.01% {opacity:1;} 18.12% {opacity:1;} 18.13% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p3 { animation: mascot-p3 3310ms step-end infinite; }
+@keyframes mascot-p4 { 0% {opacity:0;} 18.12% {opacity:0;} 18.13% {opacity:1;} 23.25% {opacity:1;} 23.26% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p4 { animation: mascot-p4 3310ms step-end infinite; }
+@keyframes mascot-p5 { 0% {opacity:0;} 23.25% {opacity:0;} 23.26% {opacity:1;} 26.27% {opacity:1;} 26.28% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p5 { animation: mascot-p5 3310ms step-end infinite; }
+@keyframes mascot-p6 { 0% {opacity:0;} 26.27% {opacity:0;} 26.28% {opacity:1;} 28.09% {opacity:1;} 28.1% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p6 { animation: mascot-p6 3310ms step-end infinite; }
+@keyframes mascot-p7 { 0% {opacity:0;} 28.09% {opacity:0;} 28.1% {opacity:1;} 31.11% {opacity:1;} 31.12% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p7 { animation: mascot-p7 3310ms step-end infinite; }
+@keyframes mascot-p8 { 0% {opacity:0;} 31.11% {opacity:0;} 31.12% {opacity:1;} 33.22% {opacity:1;} 33.23% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p8 { animation: mascot-p8 3310ms step-end infinite; }
+@keyframes mascot-p9 { 0% {opacity:0;} 33.22% {opacity:0;} 33.23% {opacity:1;} 35.34% {opacity:1;} 35.35% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p9 { animation: mascot-p9 3310ms step-end infinite; }
+@keyframes mascot-p10 { 0% {opacity:0;} 35.34% {opacity:0;} 35.35% {opacity:1;} 36.24% {opacity:1;} 36.25% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p10 { animation: mascot-p10 3310ms step-end infinite; }
+@keyframes mascot-p11 { 0% {opacity:0;} 36.24% {opacity:0;} 36.25% {opacity:1;} 38.36% {opacity:1;} 38.37% {opacity:0;} 43.19% {opacity:0;} 43.2% {opacity:1;} 46.21% {opacity:1;} 46.22% {opacity:0;} 51.35% {opacity:0;} 51.36% {opacity:1;} 53.46% {opacity:1;} 53.47% {opacity:0;} 58.3% {opacity:0;} 58.31% {opacity:1;} 61.32% {opacity:1;} 61.33% {opacity:0;} 66.46% {opacity:0;} 66.47% {opacity:1;} 68.57% {opacity:1;} 68.58% {opacity:0;} 74.61% {opacity:0;} 74.62% {opacity:1;} 76.43% {opacity:1;} 76.44% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p11 { animation: mascot-p11 3310ms step-end infinite; }
+@keyframes mascot-p12 { 0% {opacity:0;} 38.36% {opacity:0;} 38.37% {opacity:1;} 41.38% {opacity:1;} 41.39% {opacity:0;} 46.21% {opacity:0;} 46.22% {opacity:1;} 48.33% {opacity:1;} 48.34% {opacity:0;} 53.46% {opacity:0;} 53.47% {opacity:1;} 56.49% {opacity:1;} 56.5% {opacity:0;} 61.32% {opacity:0;} 61.33% {opacity:1;} 63.43% {opacity:1;} 63.44% {opacity:0;} 70.38% {opacity:0;} 70.39% {opacity:1;} 71.59% {opacity:1;} 71.6% {opacity:0;} 76.43% {opacity:0;} 76.44% {opacity:1;} 79.45% {opacity:1;} 79.46% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p12 { animation: mascot-p12 3310ms step-end infinite; }
+@keyframes mascot-p13 { 0% {opacity:0;} 41.38% {opacity:0;} 41.39% {opacity:1;} 43.19% {opacity:1;} 43.2% {opacity:0;} 48.33% {opacity:0;} 48.34% {opacity:1;} 51.35% {opacity:1;} 51.36% {opacity:0;} 56.49% {opacity:0;} 56.5% {opacity:1;} 58.3% {opacity:1;} 58.31% {opacity:0;} 63.43% {opacity:0;} 63.44% {opacity:1;} 66.46% {opacity:1;} 66.47% {opacity:0;} 71.59% {opacity:0;} 71.6% {opacity:1;} 74.61% {opacity:1;} 74.62% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p13 { animation: mascot-p13 3310ms step-end infinite; }
+@keyframes mascot-p14 { 0% {opacity:0;} 68.57% {opacity:0;} 68.58% {opacity:1;} 70.38% {opacity:1;} 70.39% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p14 { animation: mascot-p14 3310ms step-end infinite; }
+@keyframes mascot-p15 { 0% {opacity:0;} 79.45% {opacity:0;} 79.46% {opacity:1;} 81.56% {opacity:1;} 81.57% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p15 { animation: mascot-p15 3310ms step-end infinite; }
+@keyframes mascot-p16 { 0% {opacity:0;} 81.56% {opacity:0;} 81.57% {opacity:1;} 82.47% {opacity:1;} 82.48% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p16 { animation: mascot-p16 3310ms step-end infinite; }
+@keyframes mascot-p17 { 0% {opacity:0;} 82.47% {opacity:0;} 82.48% {opacity:1;} 83.68% {opacity:1;} 83.69% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p17 { animation: mascot-p17 3310ms step-end infinite; }
+@keyframes mascot-p18 { 0% {opacity:0;} 83.68% {opacity:0;} 83.69% {opacity:1;} 86.7% {opacity:1;} 86.71% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p18 { animation: mascot-p18 3310ms step-end infinite; }
+@keyframes mascot-p19 { 0% {opacity:0;} 91.53% {opacity:0;} 91.54% {opacity:1;} 93.65% {opacity:1;} 93.66% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p19 { animation: mascot-p19 3310ms step-end infinite; }
+@keyframes mascot-p20 { 0% {opacity:0;} 93.65% {opacity:0;} 93.66% {opacity:1;} 96.67% {opacity:1;} 96.68% {opacity:0;} 100% {opacity:0;} }
+.sprite.spr-mascot .p20 { animation: mascot-p20 3310ms step-end infinite; }
+@keyframes mascot-p21 { 0% {opacity:0;} 96.67% {opacity:0;} 96.68% {opacity:1;} 99.99% {opacity:1;} }
+.sprite.spr-mascot .p21 { animation: mascot-p21 3310ms step-end infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .sprite.spr-mascot g { animation: none; }
+}
+
