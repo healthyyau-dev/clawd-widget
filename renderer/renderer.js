@@ -6,13 +6,23 @@ const STATES = {
   complex:  { key: 'working', h: 82, text: "Working on a complex response",   mode: 'status' },
   done:     { key: 'idea',    h: 82, text: "Task completed!",                   mode: 'static' },
   question: { key: 'think',   h: 82, text: "I've got a question for you",      mode: 'question' },
-  launch:   { key: 'think',   h: 82, text: "No Claude running. Launch one?",   mode: 'launch' }
+  launch:   { key: 'think',   h: 82, text: "No Claude running. Launch one?",   mode: 'launch' },
+  // Transient informational bubble (e.g. after launching Claude Desktop). Text comes from
+  // state.message; no options, auto-hides. mode 'notice' keeps state pushes from clobbering it.
+  notice:   { key: 'idea',    h: 82, text: '',                                  mode: 'notice' }
 }
-// Launch-bubble options: each starts a Claude (never focuses/kills). 1-based order is
-// purely visual here -- these call launchClaude, NOT the CLI digit-forwarding path.
+// Launch-bubble option. CLI-only by design: the widget tracks state via Claude Code lifecycle
+// hooks, which Claude Desktop doesn't expose, so launching Desktop would leave the widget blind.
+// The prompt still ASKS before launching (it never auto-starts). Starts a program only -- never
+// focuses/kills, and there's no session to forward to.
 const LAUNCH_OPTS = [
-  { label: 'Claude Desktop', target: 'desktop' },
   { label: 'Claude Code CLI', target: 'cli' }
+]
+// Step 2 of the launch flow: after choosing the CLI, ask WHERE to start it. "Home folder"
+// launches in the user's home dir (no picker); "Pick a project…" opens the native folder picker.
+const LAUNCH_FOLDER_OPTS = [
+  { label: 'Home folder', act: 'home' },
+  { label: 'Pick a project\u2026', act: 'pick' }
 ]
 
 const root = document.getElementById('root')
@@ -39,6 +49,10 @@ let dragging = false
 let hovering = false
 let autoShow = false
 let autoTimer = null
+// A transient notice (e.g. after launching Claude Desktop) shows for a few seconds and must not
+// be clobbered by the ~1s state poll; onState is ignored while noticeUntil is in the future.
+let noticeUntil = 0
+let noticeTimer = null
 // Gate for the question bubble: set true when a question arrives (so it auto-surfaces in the
 // question pose) and cleared once the user answers, so an answered question won't re-appear
 // on hover before the state officially clears back to working.
@@ -47,6 +61,9 @@ let questionRevealed = false
 // the first fires a hook, so the widget walks the rest itself: qIndex is the sub-question
 // currently shown. Reset to 0 whenever a new question state arrives.
 let qIndex = 0
+// Which step of the launch bubble is showing: 0 = pick a Claude (CLI); 1 = pick where to start
+// it (Home folder / Pick a project). Reset to 0 each time the launch prompt is (re)surfaced.
+let launchStep = 0
 
 // ---------- boot ----------
 SPRITES = window.SPRITES || {}
@@ -191,23 +208,35 @@ function buildOptions (q, opts) {
       // (e.g. the terminal was closed while this bubble lingered), surfaces the launch
       // bubble -- same detect path as the sprite click. Fall back to plain focus in the
       // preview harness where idleClick isn't exposed.
-      if (passive) { if (window.clawd.idleClick) window.clawd.idleClick(); else window.clawd.focusClaude() }
-      else {
-        window.clawd.answer({ question: q, choice: label, options: opts })
-        window.clawd.sendChoice(idx + 1)
-        // More sub-questions queued in this same AskUserQuestion? No further hook fires for
-        // them, so advance locally: bump the index and re-render the next one in place. The
-        // CLI advances its own prompt in lockstep as each digit is forwarded.
-        if (current && current.state === 'question' && qIndex < questionCount(current) - 1) {
-          qIndex++
-          renderBubble(current)
-          return
-        }
+      const sid = current && current.sid
+      if (passive) {
+        // "Open Claude"/"Other": focus Claude and dismiss back to the idle pose.
+        if (window.clawd.idleClick) window.clawd.idleClick(sid); else window.clawd.focusClaude(sid)
+        questionRevealed = false; setSprite(STATES.default); measureSprite(); clampAnchor()
+        hovering = false; autoShow = false; clearTimeout(autoTimer); hideBubble()
+        return
       }
-      // Last question answered (or a passive dismiss): re-arm the question (hidden again,
-      // default pose) so it won't reappear on hover and a later click is needed to
-      // re-surface any pending prompt.
-      questionRevealed = false; setSprite(STATES.default); measureSprite(); clampAnchor()
+      window.clawd.answer({ question: q, choice: label, options: opts, sid })
+      window.clawd.sendChoice(idx + 1, sid)
+      // More sub-questions queued in this same AskUserQuestion? No further hook fires for them,
+      // so advance locally: bump the index and re-render the next one in place. The CLI advances
+      // its own prompt in lockstep as each digit is forwarded.
+      if (current && current.state === 'question' && qIndex < questionCount(current) - 1) {
+        qIndex++
+        renderBubble(current)
+        return
+      }
+      // Last sub-question answered. A MULTI-question AskUserQuestion needs a final submit (Enter)
+      // after the last selection; a single question / permission submits on the digit alone, so
+      // only send Enter when there was more than one question.
+      if (current && current.state === 'question' && questionCount(current) > 1 && window.clawd.submitAnswer) {
+        window.clawd.submitAnswer(sid)
+      }
+      // Answering RESUMES Claude, so show the WORKING pose immediately -- NOT the idle "bubble"
+      // sprite. Setting default here made the widget flash idle for a beat before the hooks
+      // pushed the working state. The real working/complex/done state arrives shortly and takes
+      // over from this placeholder pose.
+      questionRevealed = false; setSprite(STATES.working); measureSprite(); clampAnchor()
       hovering = false; autoShow = false; clearTimeout(autoTimer); hideBubble()
     })
     els.options.appendChild(b)
@@ -216,21 +245,47 @@ function buildOptions (q, opts) {
 }
 // Options for the "launch a Claude" bubble. Clicking one STARTS that Claude (via main's
 // launch-claude IPC) -- it never focuses/types/kills, and there's no session to forward to.
+// Two steps: step 0 chooses the CLI; step 1 chooses where to start it (home / picked folder).
 function buildLaunchOptions () {
   els.options.innerHTML = ''
-  LAUNCH_OPTS.forEach((it) => {
+  // Once a Claude is actually started, stop treating the widget as "no Claude running":
+  // reset to default so the hover poller doesn't re-surface the launch prompt.
+  const dismissLaunchBubble = () => {
+    launchStep = 0
+    current = { state: 'default' }; setSprite(STATES.default); measureSprite(); clampAnchor()
+    hovering = false; autoShow = false; clearTimeout(autoTimer); hideBubble()
+  }
+  const opts = launchStep === 0 ? LAUNCH_OPTS : LAUNCH_FOLDER_OPTS
+  opts.forEach((it) => {
     const b = document.createElement('button')
     b.className = 'opt'
     b.textContent = it.label
     b.addEventListener('mousedown', (e) => e.stopPropagation())
-    b.addEventListener('click', (e) => {
+    b.addEventListener('click', async (e) => {
       e.stopPropagation()
-      if (window.clawd.launchClaude) window.clawd.launchClaude(it.target)
-      // The launch prompt is one-shot: once the user picks a Claude to start, stop
-      // treating the widget as "no Claude running". Reset current to the default idle
-      // state so the hover poller doesn't re-surface this same launch bubble.
-      current = { state: 'default' }; setSprite(STATES.default); measureSprite(); clampAnchor()
-      hovering = false; autoShow = false; clearTimeout(autoTimer); hideBubble()
+      if (launchStep === 0) {
+        // Chose the CLI: advance to the folder question in place (no launch yet).
+        launchStep = 1
+        renderBubble(current)
+        return
+      }
+      // Step 1: WHERE to start the CLI.
+      if (it.act === 'home') {
+        // Launch directly in the user's home folder (no picker), then dismiss.
+        if (window.clawd.launchCliHome) window.clawd.launchCliHome()
+        else if (window.clawd.launchClaude) window.clawd.launchClaude('cli')
+        dismissLaunchBubble()
+      } else {
+        // Pick a project: native folder picker in main. Only dismiss if a folder was actually
+        // chosen -- cancelling leaves the folder question up so another choice can be made.
+        if (window.clawd.pickFolderAndLaunchCli) {
+          const res = await window.clawd.pickFolderAndLaunchCli()
+          if (res && res.launched) dismissLaunchBubble()
+        } else {
+          if (window.clawd.launchClaude) window.clawd.launchClaude('cli')
+          dismissLaunchBubble()
+        }
+      }
     })
     els.options.appendChild(b)
   })
@@ -290,14 +345,16 @@ function renderBubble (state) {
   els.options.classList.remove('show'); els.options.innerHTML = ''
   const isQ = cfg.mode === 'question'
   const isLaunch = cfg.mode === 'launch'
+  const isNotice = cfg.mode === 'notice'
   const qv = isQ ? questionAt(state, qIndex) : null
   const qcount = isQ ? questionCount(state) : 1
   // The question text used for buttons/records (no counter suffix).
-  const baseText = isLaunch ? cfg.text : (isQ ? ((qv && qv.text) || cfg.text) : ((cfg.mode === 'status' && state.status) ? state.status : cfg.text))
+  const launchText = isLaunch ? (launchStep === 1 ? 'Where should Claude start?' : cfg.text) : cfg.text
+  const baseText = isNotice ? (state.message || cfg.text) : (isLaunch ? launchText : (isQ ? ((qv && qv.text) || cfg.text) : ((cfg.mode === 'status' && state.status) ? state.status : cfg.text)))
   // Show "(2/3)" when several sub-questions are queued so it's clear more follow.
   const text = (isQ && qcount > 1) ? (baseText + '  (' + (qIndex + 1) + '/' + qcount + ')') : baseText
   const qOpts = (qv && Array.isArray(qv.options) && qv.options.length) ? qv.options : ['Open Claude']
-  const optsForMeasure = isLaunch ? LAUNCH_OPTS.map((o) => o.label) : (isQ ? qOpts : null)
+  const optsForMeasure = isLaunch ? (launchStep === 1 ? LAUNCH_FOLDER_OPTS : LAUNCH_OPTS).map((o) => o.label) : (isQ ? qOpts : null)
   const maxContent = Math.min(368, (display ? display.width : 800) - 80)
   const m = measureBubble(text, optsForMeasure)
   els.bubble.style.width = m.bw + 'px'
@@ -312,6 +369,9 @@ function renderBubble (state) {
   } else if (isLaunch) {
     els.bubbleText.textContent = text
     buildLaunchOptions()
+  } else if (isNotice) {
+    // Static, wrapped informational text; no options, no typewriter caret.
+    els.bubbleText.textContent = text
   } else {
     // Plain streamed text (status/default/done). The canvas estimate + CSS min-width can be a
     // pixel or two short and force an unexpected wrap ("Running / commands…"). Measure the TRUE
@@ -339,13 +399,13 @@ function renderBubble (state) {
   // getBoundingClientRect reports full size even while the bubble is hidden (opacity/transform
   // don't change box metrics).
   const r = els.bubble.getBoundingClientRect()
-  const bw = Math.max((isQ || isLaunch) ? m.bw : 0, Math.ceil(r.width))
+  const bw = Math.max((isQ || isLaunch || isNotice) ? m.bw : 0, Math.ceil(r.width))
   const bh = Math.ceil(r.height)
   els.bubble.style.width = bw + 'px'
   layout(true, bw, bh)
   // Keep the caret after typing for every streamed state (default/working/complex/done);
-  // only questions and the launch prompt render caret-free (they use highlight()/options).
-  if (!isQ && !isLaunch) streamText(text, true)
+  // questions, the launch prompt and notices render caret-free (static text / options).
+  if (!isQ && !isLaunch && !isNotice) streamText(text, true)
 }
 
 function showBubble () {
@@ -360,6 +420,7 @@ function showBubble () {
 // state once a session starts).
 function showLaunch () {
   current = { state: 'launch' }
+  launchStep = 0
   setSprite(STATES.launch)
   measureSprite()
   clampAnchor()
@@ -367,6 +428,31 @@ function showLaunch () {
   clearTimeout(autoTimer)
   if (bubbleVisible) renderBubble(current)
   reconcile()
+}
+// Show a transient informational bubble for `ms` (default 9s), immune to the state poll while
+// it's up (see the onState gate). Used after launching Claude Desktop from the widget.
+function showNotice (msg, ms) {
+  ms = ms || 9000
+  current = { state: 'notice', message: msg }
+  setSprite(STATES.notice)
+  measureSprite()
+  clampAnchor()
+  questionRevealed = false
+  hovering = false
+  autoShow = true
+  noticeUntil = Date.now() + ms
+  clearTimeout(autoTimer)
+  if (!bubbleVisible) { bubbleVisible = true; if (isElectron) window.clawd.setBubbleVisible(true) }
+  renderBubble(current)
+  clearTimeout(noticeTimer)
+  noticeTimer = setTimeout(() => {
+    noticeUntil = 0
+    autoShow = false
+    current = { state: 'default' }
+    setSprite(STATES.default); measureSprite(); clampAnchor()
+    hideBubble()
+    reconcile()
+  }, ms)
 }
 let shrinkTimer = null
 function hideBubble () {
@@ -380,9 +466,13 @@ function hideBubble () {
 }
 function reconcile () {
   if (dragging) return
-  // A question is gated by questionRevealed (auto-set true when it arrives, cleared after the
-  // user answers) so it auto-surfaces and then stays put. Every other state uses hover / auto-show.
-  const want = (current && current.state === 'question') ? questionRevealed : (hovering || autoShow)
+  // Hover (and the ~2s auto-show) can surface the bubble in ANY state. A pending question ALSO
+  // stays up on its own via questionRevealed (set true when it arrives, cleared once answered), so
+  // it doesn't need the cursor. Previously question state made `want` depend ONLY on questionRevealed,
+  // so hovering the widget while a (possibly stale) question was showing did nothing -- hover was
+  // effectively dead. OR-ing hover back in fixes that without losing the question's auto-persist.
+  const isQ = current && current.state === 'question'
+  const want = hovering || autoShow || (isQ && questionRevealed)
   if (want) { if (!bubbleVisible) showBubble() }
   else if (bubbleVisible) hideBubble()
 }
@@ -418,8 +508,8 @@ els.hot.addEventListener('mousedown', (e) => {
     // A clean click switches to the active Claude; main also checks whether any Claude is
     // running and, if none is, shows the "launch one?" bubble. Fall back to plain focus when
     // idleClick isn't available (e.g. the preview harness).
-    else if (window.clawd.idleClick) { window.clawd.idleClick() }
-    else { window.clawd.focusClaude() }
+    else if (window.clawd.idleClick) { window.clawd.idleClick(current && current.sid) }
+    else { window.clawd.focusClaude(current && current.sid) }
     reconcile()
   }
   document.addEventListener('mousemove', onMove)
@@ -456,6 +546,9 @@ window.clawd.onEnv((env) => {
 })
 
 window.clawd.onState((state) => {
+  // While a transient notice is showing, ignore state pushes (incl. the ~1s idle poll) so the
+  // notice isn't clobbered before the user can read it.
+  if (noticeUntil && Date.now() < noticeUntil) return
   current = state
   const isQ = state.state === 'question'
   // A pending question auto-surfaces: clawd switches to its question pose and the bubble opens

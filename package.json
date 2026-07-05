@@ -1,12 +1,12 @@
 {
   "name": "clawd-widget",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "Always-on-top desktop pet that reflects Claude's working state.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win nsis",
-    "dist:portable": "electron-builder --win portable",
+    "dist:mac": "electron-builder --mac",
     "restart": "node scripts/restart.js"
   },
   "author": "Healthy Yau",
@@ -42,10 +42,22 @@
       "runAfterFinish": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Clawd"
+      "shortcutName": "Clawd",
+      "artifactName": "Clawd Setup.exe"
     },
-    "portable": {
-      "artifactName": "ClawdWidget.exe"
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["arm64", "x64"] },
+        { "target": "zip", "arch": ["arm64", "x64"] }
+      ],
+      "category": "public.app-category.developer-tools",
+      "identity": null,
+      "extendInfo": {
+        "LSUIElement": true
+      }
+    },
+    "dmg": {
+      "title": "${productName}"
     }
   }
 }

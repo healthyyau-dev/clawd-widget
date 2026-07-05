@@ -3,8 +3,12 @@
 #   launch-claude.ps1 desktop  -> start the Claude desktop app
 # This only STARTS a program; it never focuses-by-stealing, types, or kills anything.
 # Writes a line to launch.log each run so launches can be diagnosed.
-param([string]$Target = 'cli')
+param([string]$Target = 'cli', [string]$WorkDir = '')
 $ErrorActionPreference = 'SilentlyContinue'
+# A valid, existing folder to start the CLI terminal in. Blank/missing -> use the terminal's
+# own default directory (previous behaviour). Only honoured for the CLI target.
+$startDir = ''
+if ($WorkDir -and (Test-Path -LiteralPath $WorkDir -PathType Container)) { $startDir = $WorkDir }
 $dir = "$env:USERPROFILE\.clawd-widget"
 $log = Join-Path $dir 'launch.log'
 function Log ($m) { try { Add-Content -Path $log -Value ((Get-Date -Format o) + '  ' + $m) } catch {} }
@@ -32,12 +36,40 @@ if ($Target -eq 'desktop') {
 } else {
   # CLI: open a brand-new terminal window running `claude`. Prefer Windows Terminal;
   # fall back to a classic console. `cmd /k` keeps the window open after claude exits.
+  #
+  # The widget process may itself be running inside a Claude Code session, so its env
+  # carries CLAUDECODE (and the SSE-port vars). Those are inherited all the way down to
+  # the launched `claude`, which then aborts with "cannot be launched inside another
+  # Claude Code session". Strip them here BEFORE Start-Process so the new terminal gets
+  # a clean, non-nested environment (Start-Process inherits the current process env).
+  foreach ($v in 'CLAUDECODE','CLAUDE_CODE_ENTRYPOINT','CLAUDE_CODE_SSE_PORT') {
+    Remove-Item "Env:$v" -ErrorAction SilentlyContinue
+  }
   $wt = Get-Command wt.exe -ErrorAction SilentlyContinue
   if ($wt) {
-    Start-Process 'wt.exe' -ArgumentList 'new-tab --title "Claude Code" cmd /k claude'
-    Log 'launched cli via Windows Terminal'
+    # Windows Terminal takes the starting folder via `new-tab -d <dir>` (before the commandline).
+    #
+    # Invoke wt.exe with the call operator `&` and pass each token as a separate argument.
+    # PowerShell 5.1 automatically wraps any native-command argument that contains a space
+    # (e.g. the title "Claude Code" or a start dir with spaces) in quotes that survive into
+    # wt.exe. Both Start-Process forms fail here: the array form drops the quotes and the
+    # single-string form has its quotes stripped, so wt reads `--title Claude`, then treats
+    # `Code` as the command -> "command not found: Code".
+    if ($startDir) {
+      & wt.exe new-tab --title 'Claude Code' -d $startDir cmd /k claude
+      Log "launched cli via Windows Terminal in $startDir"
+    } else {
+      & wt.exe new-tab --title 'Claude Code' cmd /k claude
+      Log 'launched cli via Windows Terminal'
+    }
   } else {
-    Start-Process 'cmd.exe' -ArgumentList @('/k', 'claude')
-    Log 'launched cli via cmd'
+    # Classic console: Start-Process sets the new window's working directory via -WorkingDirectory.
+    if ($startDir) {
+      Start-Process 'cmd.exe' -ArgumentList @('/k', 'claude') -WorkingDirectory $startDir
+      Log "launched cli via cmd in $startDir"
+    } else {
+      Start-Process 'cmd.exe' -ArgumentList @('/k', 'claude')
+      Log 'launched cli via cmd'
+    }
   }
 }

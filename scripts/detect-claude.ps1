@@ -21,7 +21,10 @@ $nodes = Get-CimInstance Win32_Process -Filter "name='node.exe'"
 foreach ($p in $nodes) {
   $cl = ('' + $p.CommandLine).ToLower()
   $isCli = ($cl -like '*claude-code*') -or ($cl -like '*\.bin\claude*') -or ($cl -like '*\claude\cli.js*')
-  if ($isCli -and $cl -notlike '*clawd-widget*') { $cli = 1; break }
+  # Exclude the widget's own electron and npm helper processes (e.g. the periodic
+  # `npm view @anthropic-ai/claude-code@latest` update check) so a transient version check
+  # isn't mistaken for a live CLI session (which would wrongly suppress the launch prompt).
+  if ($isCli -and $cl -notlike '*clawd-widget*' -and $cl -notlike '*npm-cli.js*') { $cli = 1; break }
 }
 
 "desktop=$desktop cli=$cli"

@@ -8,6 +8,9 @@ build/
 *.exe
 *.blockmap
 
+# Sprite export scratch. (Surfaced installers live at the repo root as *.exe, already ignored above.)
+sprites_export/
+
 # Logs
 *.log
 npm-debug.log*

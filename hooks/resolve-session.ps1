@@ -73,6 +73,18 @@ while ($cur -gt 0 -and $byId.ContainsKey($cur) -and $g -lt 40) {
   $cur = $byId[$cur]; $g++
 }
 
+# 1b. Ancestry owned NO visible window at all. Under the Windows 11 DefTerm handoff the session's
+#     console is a ConPTY hosted by a SEPARATE conhost/WindowsTerminal process OUTSIDE our process
+#     tree (ancestry is just node -> cmd -> explorer), and the pseudo-console window is invisible,
+#     so step 1 finds nothing. Fall back to the Windows Terminal window whose title names the Claude
+#     session. Without this the whole resolve returned nothing (hwnd stayed Zero, guarded by the
+#     'if hwnd' below), so the session file never got a pid/hwnd/consolePids and clicks -- focus and
+#     digit injection -- could not be routed to this session.
+if ($hwnd -eq [IntPtr]::Zero) {
+  $wt = [Win]::TerminalByTitle('claude')
+  if ($wt -ne [IntPtr]::Zero) { $hwnd = $wt }
+}
+
 # 2. If that window is a ConPTY pseudo-console (DefTerm handoff), the real UI is
 #    a Windows Terminal window in another process -- find it by the session title.
 if ($hwnd -ne [IntPtr]::Zero) {

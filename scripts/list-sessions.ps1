@@ -58,7 +58,10 @@ $nodes = Get-CimInstance Win32_Process -Filter "name='node.exe'"
 foreach ($p in $nodes) {
   $cl = ('' + $p.CommandLine).ToLower()
   $isCli = ($cl -like '*claude-code*') -or ($cl -like '*\.bin\claude*') -or ($cl -like '*\claude\cli.js*')
-  if (-not $isCli -or $cl -like '*clawd-widget*') { continue }
+  # Exclude the widget's own electron, and npm helper processes (e.g. the periodic
+  # `npm view @anthropic-ai/claude-code@latest` update check) -- those run from the home
+  # folder and would otherwise show up as a phantom session named after it (e.g. "zippe").
+  if (-not $isCli -or $cl -like '*clawd-widget*' -or $cl -like '*npm-cli.js*') { continue }
   $spid = [int]$p.ProcessId
 
   $title = $null

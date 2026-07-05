@@ -9,13 +9,18 @@
 # leak into another app's window the way a global keystroke would. NO Enter is ever sent
 # (number-only), so it can never submit a shell command. Raise-/kill-free: no window is
 # shown, activated, minimized, closed, or terminated.
-param([int]$Digit = 0)
+param([int]$Digit = 0, [switch]$Enter)
 $ErrorActionPreference = 'SilentlyContinue'
 $dir = "$env:USERPROFILE\.clawd-widget"
 $log = Join-Path $dir 'focus.log'
 function Log ($m) { try { Add-Content -Path $log -Value ((Get-Date -Format o) + '  [send-choice] ' + $m) } catch {} }
 
-if ($Digit -lt 1 -or $Digit -gt 9) { Log "bad digit=$Digit"; return }
+# Two modes: inject a DIGIT (1-9) to pick a numbered option, or inject ENTER (-Enter) to submit
+# a multi-question AskUserQuestion after its last answer. Enter is used ONLY for that submit step
+# (never after a shell command), so it can't run anything.
+if ($Enter) { $vk = [uint16]0x0D; $ch = [char]13 }
+elseif ($Digit -ge 1 -and $Digit -le 9) { $vk = [uint16](0x30 + $Digit); $ch = [char]([int][char]'0' + $Digit) }
+else { Log "bad digit=$Digit"; return }
 
 $sf = Join-Path $dir 'session.json'
 if (-not (Test-Path $sf)) { Log 'no session.json'; return }
@@ -47,14 +52,15 @@ public class ConInject {
     [FieldOffset(4)] public KEY_EVENT_RECORD KeyEvent;
   }
 
-  // Attach to `pid`'s console and write the digit char as a down+up key pair.
-  public static string Inject(uint pid, char ch) {
+  // Attach to `pid`'s console and write the key (given its virtual-key code + char) as a
+  // down+up pair. Used for a digit (option pick) or Enter (multi-question submit).
+  public static string Inject(uint pid, ushort vk, char ch) {
     FreeConsole();
     if (!AttachConsole(pid)) return "attach-fail:" + Marshal.GetLastWin32Error();
     IntPtr h = CreateFileW("CONIN$", 0xC0000000u, 3u, IntPtr.Zero, 3u, 0u, IntPtr.Zero);
     if (h == new IntPtr(-1)) { int e = Marshal.GetLastWin32Error(); FreeConsole(); return "conin-fail:" + e; }
     var down = new KEY_EVENT_RECORD {
-      bKeyDown = 1, wRepeatCount = 1, wVirtualKeyCode = (ushort)(0x30 + (ch - '0')),
+      bKeyDown = 1, wRepeatCount = 1, wVirtualKeyCode = vk,
       wVirtualScanCode = 0, UnicodeChar = ch, dwControlKeyState = 0
     };
     var up = down; up.bKeyDown = 0;
@@ -75,15 +81,15 @@ public class ConInject {
 # died and got reused by an unrelated process (a lone digit, no Enter, is harmless anyway).
 $allow = 'node','claude','cmd','powershell','pwsh','bash','sh','zsh','fish',
          'wsl','wslhost','ubuntu'
-$ch = [char]([int][char]'0' + $Digit)
+$what = if ($Enter) { 'ENTER' } else { "digit=$Digit" }
 $done = $false
 foreach ($p in $pids) {
   $proc = Get-Process -Id ([int]$p) -ErrorAction SilentlyContinue
   if (-not $proc) { continue }
   $name = ($proc.ProcessName).ToLowerInvariant()
   if ($allow -notcontains $name) { Log "skip pid=$p name=$name (not allowlisted)"; continue }
-  $r = [ConInject]::Inject([uint32]$p, $ch)
-  Log "inject digit=$Digit pid=$p name=$name -> $r"
+  $r = [ConInject]::Inject([uint32]$p, $vk, $ch)
+  Log "inject $what pid=$p name=$name -> $r"
   if ($r -like 'ok=True*' -and $r -notlike '*written=0*') { $done = $true; break }
 }
 
@@ -106,11 +112,11 @@ if (-not $done) {
   $live = @($live | Where-Object { $_ -gt 0 -and ($pids -notcontains $_) } | Select-Object -Unique)
   if ($live.Count -eq 1) {
     $p = $live[0]
-    $r = [ConInject]::Inject([uint32]$p, $ch)
-    Log "inject(live) digit=$Digit pid=$p name=node -> $r"
+    $r = [ConInject]::Inject([uint32]$p, $vk, $ch)
+    Log "inject(live) $what pid=$p name=node -> $r"
     if ($r -like 'ok=True*' -and $r -notlike '*written=0*') { $done = $true }
   } elseif ($live.Count -gt 1) {
     Log "live fallback skipped: $($live.Count) claude sessions (ambiguous target)"
   }
 }
-if (-not $done) { Log "choice $Digit not injected (no attachable console client)" }
+if (-not $done) { Log "$what not injected (no attachable console client)" }
