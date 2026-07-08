@@ -1,139 +1,73 @@
-# Clawd widget
+# Clawd
 
-An always-on-top, draggable desktop pet that mirrors what Claude Code is doing. Each
-state is a pixel-art Clawd sprite (frame-accurate SVG + CSS — no GIFs at runtime). It
-watches per-session state files that Claude Code lifecycle **hooks** write, so it
-reflects your real session(s), not a simulation.
+A tiny desktop helper that sits on top of your screen and shows you what Claude is doing -
+thinking, working, waiting for your answer, or finished. Grab it and drag it anywhere.
 
-Windows is fully supported. macOS is scaffolded (see **Cross-platform**) but not yet
-tested.
+> Building from source or contributing? See **[DEV.md](DEV.md)**.
 
-## States
+## Features
 
-| State | Sprite | Bubble | Click |
-|---|---|---|---|
-| **Default / idle** | `clawd-bubble` | "What can I take off your plate?" | Focus the active Claude terminal |
-| **Working** | `ClawdMascot` | "Thinking…" (live per-tool status) | Focus the active Claude terminal |
-| **Working (complex)** | `clawd-working` | "Working on a complex response" | Focus the active Claude terminal |
-| **Question / permission** | `clawd-think` | The question + real answer buttons | Click an option → injects it into the right session |
-| **Done** | `clawd-idea` | "Task completed!" | Focus the active Claude terminal |
+- **Live status at a glance** - Clawd changes pose for each state: idle, working, a complex
+  task, a pending question, or a completed task.
+- **Answer questions without switching windows** *(Claude Code on Windows)* - when Claude asks
+  a permission or multiple-choice question, the buttons appear on Clawd. Click one and it's
+  sent straight to the right session - no window steal, no digging for the terminal.
+- **Handles multiple sessions** - running Claude in several projects? Clawd shows the one that
+  needs you most (a pending question first), and the tray menu lists them all.
+- **Always on top & out of the way** - floats above other apps and across virtual desktops.
+  Everything except Clawd and its speech bubble is click-through.
+- **Click to jump back** - click Clawd to bring the active Claude window to the front.
+- **Tray menu** - start at login, see active sessions, or close the widget.
 
-The widget floats above other apps and virtual desktops and is draggable — grab Clawd
-and move it. The transparent area is click-through; only Clawd and its bubble capture
-the mouse.
+## Compatibility
 
-**Tray / right-click menu:** Start at login · Active sessions (each with a status
-emoji: ❓ question · 🔄 working · 🧠 complex · ✅ done · 💤 idle — click to focus that
-session) · Close widget.
+| Platform | Status | Notes |
+|---|---|---|
+| **Windows 10 / 11** | ✅ Ready | Full support. Installer provided. |
+| **macOS** | 🚧 Not ready | Code is scaffolded but untested, and **no installer is built yet.** |
 
-## Quick preview (no install)
+On Windows, Clawd works with both:
 
-Open `renderer/preview.html` in any browser to see the look & behaviour (state switch
-bar + hover). No Electron required.
+- **Claude Code (CLI)** - full support, including answering questions/permissions right from the widget.
+- **Claude Desktop app** - shows working / needs-input / finished. A "Task completed!" pose stays
+  up after a task so you don't miss it, and clears once you look back at Desktop. (Desktop questions
+  aren't answerable from the widget - clicking just brings the Desktop window forward.)
 
-## Build & install
+## Install (Windows)
 
-Needs Node.js + internet for the build step only.
+1. Get **`Clawd Setup.exe`**.
+2. Double-click it. It installs just for your user (no admin needed) and launches automatically,
+   adding a **Clawd** shortcut to your Start menu and desktop.
+3. *(Optional)* Right-click Clawd in the system tray → **Start at login** to have it run on boot.
 
-**Windows installer (recommended):**
+To run on boot later, or to close it, use that same tray menu.
+
+### Using it with Claude Code (CLI)
+
+So Clawd can see your Claude Code sessions, install the hooks once:
+
 ```bash
-npm install
-npm run dist
-```
-Produces `dist/Clawd Setup.exe` (a copy is surfaced at the repo root). The name is fixed
-(no version), so each build overwrites the same file. Run it → it installs per-user (no
-admin), adds a **Clawd** shortcut to the Start menu + desktop, and launches. Use the tray
-menu → **Start at login** to run on boot.
-
-- **Dev run:** `npm start` (or double-click `scripts/Launch Clawd.vbs` / `scripts/Launch Clawd.cmd`).
-- **Restart the dev widget after editing `main.js`/`preload.js`/`renderer/`:** `npm run restart`.
-
-**macOS (build on a Mac only):**
-```bash
-npm install
-npm run dist:mac
-```
-Produces `Clawd-1.0.3-<arch>.dmg` (+ `.zip`, + `mac*/Clawd.app`) in `dist/`. The build is
-**unsigned** (`identity: null`), so first launch: right-click → Open, or
-`xattr -dr com.apple.quarantine dist/mac-arm64/Clawd.app`.
-
-## Driving it from Claude (hooks)
-
-Install the lifecycle hooks (safe merge, backs up existing settings):
-```bash
-node hooks/install-hooks.js          # install
-node hooks/install-hooks.js --remove # uninstall
-```
-Then start a new Claude Code session. Event → state mapping:
-
-| Hook event | → state |
-|---|---|
-| `SessionStart` | default |
-| `UserPromptSubmit` | working (resets the turn) |
-| `PreToolUse` (any tool) | working (per-tool status line) |
-| `PreToolUse` (`Task`) / `SubagentStart` | complex |
-| `PreToolUse` (`AskUserQuestion`) | question (real question + options) |
-| `PermissionRequest` / `Notification` | question (permission prompt) |
-| `PostToolUse` | clears the answered question back to working |
-| `Stop` | done |
-
-## How state & sessions work
-
-- Each session's hooks write `~/.clawd-widget/sessions/<key>.json`, **keyed by the project
-  (cwd)** — every hook payload carries `cwd`, so all events for a project land in one file
-  (keying by `session_id` split a session across files, since some events omit it). Writes
-  are atomic (temp + rename) so the widget never reads a half-written file.
-- `main.js` watches that folder and shows the **newest pending question**; otherwise the
-  most-recently-active session; otherwise idle. So one session's question is never hidden
-  behind another's status, and concurrent sessions don't clobber each other.
-- **Answering (Windows):** permission options are read from the terminal via UI Automation
-  (`hooks/read-options.ps1`) and shown as buttons. Clicking one injects the matching digit
-  into that session's console (`scripts/send-choice.ps1`, via `AttachConsole` +
-  `WriteConsoleInput`) — no window is focused or stolen. A multi-question `AskUserQuestion`
-  auto-submits with Enter after the last answer.
-
-## Cross-platform
-
-- **Windows:** full functionality (detect/list/focus sessions, option scraping, digit/Enter
-  injection) via PowerShell in `scripts/*.ps1` and `hooks/*.ps1`.
-- **macOS:** scaffolded in `scripts/mac/*.sh` (detect/list/focus/launch via `ps`/`lsof`/
-  `osascript`). Answering **degrades to focusing the terminal** (no focus-free console
-  injection equivalent yet; keystroke injection via the Accessibility API is future work).
-  Untested — build/verify on a Mac.
-
-## Limitations
-
-- **No public "Claude state" API** — the hooks are the supported signal; missing events fall
-  back to the stable ones.
-- **Answer injection is Windows-only** (real); macOS focuses the terminal instead.
-- **Focus is best-effort** — tweak `focusClaude()` in `main.js` (or `scripts/mac/focus-session.sh`)
-  if your terminal/app differs.
-- The macOS build is unsigned and untested.
-
-## Files
-
-```
-clawd-widget/
-├─ main.js                 Electron main: floating window, session aggregation/routing, tray
-├─ preload.js              Secure IPC bridge to the renderer
-├─ renderer/
-│  ├─ index.html           The widget
-│  ├─ renderer.js          State → sprite, bubbles, drag/click, mouse pass-through
-│  ├─ styles.css / sprites.css / sprites.json   Layout + sprite animations/SVGs
-│  └─ preview.html         Browser preview (no Electron)
-├─ hooks/
-│  ├─ set-state.js         Writes per-session state (called by Claude Code hooks)
-│  ├─ install-hooks.js     Safe merge into ~/.claude/settings.json
-│  ├─ resolve-session.ps1  Resolves a session's terminal window + console pids (Windows)
-│  └─ read-options.ps1     Scrapes live permission options via UI Automation (Windows)
-├─ scripts/
-│  ├─ detect-claude.ps1 / list-sessions.ps1     Detect/enumerate sessions (Windows)
-│  ├─ focus-session.ps1 / send-choice.ps1       Focus / inject choice (Windows)
-│  ├─ launch-claude.ps1 / restart.js            Launch Claude / restart the widget
-│  └─ mac/*.sh            macOS equivalents (detect/list/focus/launch)
-├─ assets/                Icons
-└─ Clawd Setup.exe        NSIS installer, surfaced at root after `npm run dist` (gitignored)
+node hooks/install-hooks.js
 ```
 
-Sprite sizes: edit the `h` values in `STATES` in `renderer/renderer.js`.
-```
+Then open a new Claude Code session - Clawd will start reflecting it. (The Claude Desktop app
+needs no setup; Clawd detects it automatically.)
+
+To remove the hooks: `node hooks/install-hooks.js --remove`.
+
+## Using Clawd
+
+- **Move it:** drag Clawd anywhere on screen.
+- **Bring Claude forward:** click Clawd.
+- **Answer a question:** when a question bubble appears, click the option you want.
+- **Menu:** right-click Clawd (or its tray icon) for sessions and settings.
+
+## macOS
+
+Not ready yet. There is no macOS installer, and the macOS code has not been tested. Windows is
+the supported platform for now. (Developers: build notes are in **[DEV.md](DEV.md)**.)
+
+## Uninstall
+
+Windows: **Settings → Apps → Installed apps → Clawd → Uninstall** (or use the Start-menu
+uninstaller). To also stop the Claude Code integration, run `node hooks/install-hooks.js --remove`.
