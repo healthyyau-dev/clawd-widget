@@ -273,6 +273,10 @@ function readPrefs () {
 function writePref (key, val) {
   try { const o = readPrefs(); o[key] = val; fs.writeFileSync(PREFS_FILE, JSON.stringify(o, null, 2)) } catch (e) {}
 }
+// Push the current prefs to the renderer so a toggle (e.g. Sound effects) applies live.
+function pushPrefs () {
+  if (win && !win.isDestroyed() && win.webContents && !win.webContents.isDestroyed()) win.webContents.send('prefs', readPrefs())
+}
 
 let win = null
 let tray = null
@@ -310,7 +314,10 @@ function createWindow () {
     width: 200, height: 200,
     frame: false, transparent: true, resizable: false, hasShadow: false,
     skipTaskbar: true, alwaysOnTop: true, focusable: false, fullscreenable: false, show: false,
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
+    // autoplayPolicy: let notification chimes (renderer SOUNDS) play without a user gesture --
+    // Chromium otherwise blocks Audio.play() until the page is interacted with, which this
+    // never-focused, click-through window can't rely on.
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, autoplayPolicy: 'no-user-gesture-required' }
   })
   reassertTop()
   win.setIgnoreMouseEvents(true, { forward: true })
@@ -695,10 +702,14 @@ function buildMenu (sessions) {
   // gutter is reserved and the menu hugs its text.
   let loginOn = false
   try { loginOn = app.getLoginItemSettings().openAtLogin } catch (e) {}
+  // Sound effects on unless explicitly disabled (default = on). Toggling persists the pref and
+  // pushes it to the renderer so the change takes effect immediately (no restart).
+  const sfxOn = readPrefs().sfx !== false
   return Menu.buildFromTemplate([
     { label: 'Clawd', enabled: false },
     { type: 'separator' },
     { label: (loginOn ? '\u2713 ' : '') + 'Start at login', click: () => setAutoStart(!loginOn) },
+    { label: (sfxOn ? '\u2713 ' : '') + 'Sound effects', click: () => { writePref('sfx', !sfxOn); pushPrefs() } },
     { type: 'separator' },
     { label: 'Active sessions', enabled: false },
     ...sessionItems,

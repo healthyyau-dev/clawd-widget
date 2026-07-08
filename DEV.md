@@ -40,10 +40,12 @@ Needs Node.js + internet for the build step only.
 npm install
 npm run dist
 ```
-Produces `dist/Clawd Setup.exe` (a copy is surfaced at the repo root). The name is fixed
-(no version), so each build overwrites the same file. Run it → it installs per-user (no
-admin), adds a **Clawd** shortcut to the Start menu + desktop, and launches. Use the tray
-menu → **Start at login** to run on boot.
+electron-builder writes into `dist/`, then `scripts/publish-installer.js` (chained in the
+`dist` script) MOVES the installer up to the repo root. **The root `Clawd Setup.exe` is the
+single source of truth** — never distribute the `dist/` copy (it's removed post-build). The
+name is fixed (no version), so each build overwrites the same root file. Run it → it installs
+per-user (no admin), adds a **Clawd** shortcut to the Start menu + desktop, and launches. Use
+the tray menu → **Start at login** to run on boot.
 
 - **Dev run:** `npm start` (or double-click `scripts/Launch Clawd.vbs` / `scripts/Launch Clawd.cmd`).
 - **Restart the dev widget after editing `main.js`/`preload.js`/`renderer/`:** `npm run restart`.

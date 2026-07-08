@@ -27,5 +27,7 @@ contextBridge.exposeInMainWorld('clawd', {
   // Persist a UI preference (e.g. suppressDesktopWarn from the Desktop launch confirmation's
   // "don't show again"). Current prefs arrive with the initial env payload (onEnv).
   setPref: (k, v) => ipcRenderer.send('set-pref', { k, v }),
+  // Live pref updates pushed from main (e.g. the menu's Sound effects toggle) after the initial env.
+  onPrefs: (cb) => ipcRenderer.on('prefs', (_e, p) => cb(p)),
   onLaunchPrompt: (cb) => ipcRenderer.on('show-launch', () => cb())
 })
