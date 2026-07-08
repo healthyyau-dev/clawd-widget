@@ -1,0 +1,7 @@
+{
+  "name": "probe-widget",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Throwaway test build: shows Claude Desktop working/idle via UIA probe. Delete experiments/ to dump.",
+  "main": "main.js"
+}

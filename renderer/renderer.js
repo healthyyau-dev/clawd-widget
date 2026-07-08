@@ -6,17 +6,24 @@ const STATES = {
   complex:  { key: 'working', h: 82, text: "Working on a complex response",   mode: 'status' },
   done:     { key: 'idea',    h: 82, text: "Task completed!",                   mode: 'static' },
   question: { key: 'think',   h: 82, text: "I've got a question for you",      mode: 'question' },
-  launch:   { key: 'think',   h: 82, text: "No Claude running. Launch one?",   mode: 'launch' },
+  launch:   { key: 'think',   h: 82, text: "Would you like to start a new CLI session?",   mode: 'launch' },
   // Transient informational bubble (e.g. after launching Claude Desktop). Text comes from
   // state.message; no options, auto-hides. mode 'notice' keeps state pushes from clobbering it.
-  notice:   { key: 'idea',    h: 82, text: '',                                  mode: 'notice' }
+  notice:   { key: 'idea',    h: 82, text: '',                                  mode: 'notice' },
+  // Claude hit a runtime error (e.g. a 401 auth error). The specific message is carried on
+  // state.status (set by set-state.js); mode 'status' surfaces it, else the fallback text.
+  error:    { key: 'error',   h: 82, text: "Something went wrong",              mode: 'status' }
 }
 // Launch-bubble option. CLI-only by design: the widget tracks state via Claude Code lifecycle
 // hooks, which Claude Desktop doesn't expose, so launching Desktop would leave the widget blind.
 // The prompt still ASKS before launching (it never auto-starts). Starts a program only -- never
 // focuses/kills, and there's no session to forward to.
 const LAUNCH_OPTS = [
-  { label: 'Claude Code CLI', target: 'cli' }
+  { label: 'Launch Claude Code CLI', target: 'cli' },
+  // DISPOSABLE TESTING FEATURE: launches the experimental Claude Desktop build. Desktop
+  // exposes no lifecycle hooks, so the widget stays blind to its state after launch --
+  // this is a start-only convenience for probe testing, not a supported tracked session.
+  { label: 'Launch Claude Desktop (test)', target: 'desktop' }
 ]
 // Step 2 of the launch flow: after choosing the CLI, ask WHERE to start it. "Home folder"
 // launches in the user's home dir (no picker); "Pick a project…" opens the native folder picker.
@@ -24,6 +31,13 @@ const LAUNCH_FOLDER_OPTS = [
   { label: 'Home folder', act: 'home' },
   { label: 'Pick a project\u2026', act: 'pick' }
 ]
+// Launch step 2: shown before launching Claude Desktop, to set expectations. Desktop exposes no
+// lifecycle hooks, so the widget can only DISPLAY its status (from a UIA scrape) -- it can't answer
+// prompts, forward option-clicks, or focus-to-answer the way it can for the CLI. Steer users to the
+// CLI for the full experience, but let them proceed (and opt out of this warning) if they want.
+const DESK_WARN_TEXT = "With Claude Desktop, I can only display status with no actions \u2014 answering prompts, granting permissions etc. Try the Claude Code CLI if you wish to try the full experience."
+// Static labels used only to size the bubble wide enough (the checkbox row adds a box glyph prefix).
+const DESK_WARN_OPT_LABELS = ['Launch Claude Desktop anyway', 'Launch Claude Code CLI', 'Do not show this again']
 
 const root = document.getElementById('root')
 const els = {
@@ -61,9 +75,15 @@ let questionRevealed = false
 // the first fires a hook, so the widget walks the rest itself: qIndex is the sub-question
 // currently shown. Reset to 0 whenever a new question state arrives.
 let qIndex = 0
-// Which step of the launch bubble is showing: 0 = pick a Claude (CLI); 1 = pick where to start
-// it (Home folder / Pick a project). Reset to 0 each time the launch prompt is (re)surfaced.
+// Which step of the launch bubble is showing: 0 = pick a Claude (CLI/Desktop); 1 = pick where to
+// start the CLI (Home / Pick a project); 2 = the Claude Desktop limited-feature confirmation.
+// Reset to 0 each time the launch prompt is (re)surfaced.
 let launchStep = 0
+// Persisted UI preferences from main (delivered in the env payload). { suppressDesktopWarn: bool }.
+let prefs = {}
+// Local toggle for the Desktop-warning step's "don't show again" affordance; when set and the user
+// proceeds, it's persisted via setPref. Reset whenever the launch prompt is (re)surfaced.
+let launchDeskDontShow = false
 
 // ---------- boot ----------
 SPRITES = window.SPRITES || {}
@@ -255,6 +275,40 @@ function buildLaunchOptions () {
     current = { state: 'default' }; setSprite(STATES.default); measureSprite(); clampAnchor()
     hovering = false; autoShow = false; clearTimeout(autoTimer); hideBubble()
   }
+  // Actually start Claude Desktop, then dismiss the launch flow (the desktop probe drives the
+  // sprite from there). Shared by the suppressed-fast-path and the confirm.
+  const proceedDesktop = () => {
+    if (window.clawd.launchClaude) window.clawd.launchClaude('desktop')
+    dismissLaunchBubble()
+  }
+  // Step 2: the Claude Desktop limited-feature confirmation. Three controls: proceed, redirect to
+  // the (recommended) CLI flow, and a "don't show again" toggle that persists the preference.
+  if (launchStep === 2) {
+    const mk = (label, cls, onClick) => {
+      const b = document.createElement('button')
+      b.className = 'opt' + (cls ? ' ' + cls : '')
+      b.textContent = label
+      b.addEventListener('mousedown', (e) => e.stopPropagation())
+      b.addEventListener('click', (e) => { e.stopPropagation(); onClick() })
+      els.options.appendChild(b)
+    }
+    mk('Launch Claude Desktop anyway', '', () => {
+      if (launchDeskDontShow && window.clawd.setPref) { window.clawd.setPref('suppressDesktopWarn', true); prefs.suppressDesktopWarn = true }
+      proceedDesktop()
+    })
+    // The recommended path: jump straight to the CLI's "where to start" step.
+    mk('Launch Claude Code CLI', 'other', () => { launchStep = 1; renderBubble(current) })
+    // "Do not show this again" is a CHECKBOX affordance, not a button -- flips the local flag and
+    // re-renders so the tick toggles; never launches or dismisses on its own.
+    const chk = document.createElement('div')
+    chk.className = 'opt-check' + (launchDeskDontShow ? ' checked' : '')
+    chk.innerHTML = '<span class="box">' + (launchDeskDontShow ? '\u2713' : '') + '</span><span>Do not show this again</span>'
+    chk.addEventListener('mousedown', (e) => e.stopPropagation())
+    chk.addEventListener('click', (e) => { e.stopPropagation(); launchDeskDontShow = !launchDeskDontShow; renderBubble(current) })
+    els.options.appendChild(chk)
+    els.options.classList.add('show')
+    return
+  }
   const opts = launchStep === 0 ? LAUNCH_OPTS : LAUNCH_FOLDER_OPTS
   opts.forEach((it) => {
     const b = document.createElement('button')
@@ -264,6 +318,14 @@ function buildLaunchOptions () {
     b.addEventListener('click', async (e) => {
       e.stopPropagation()
       if (launchStep === 0) {
+        // Chose Claude Desktop: Desktop has no folder step. Show the limited-feature confirmation
+        // first (step 2) UNLESS the user previously ticked "don't show again", in which case launch
+        // straight away. The widget can only DISPLAY Desktop's state (see DESK_WARN_TEXT).
+        if (it.target === 'desktop') {
+          if (prefs && prefs.suppressDesktopWarn) { proceedDesktop() }
+          else { launchStep = 2; renderBubble(current) }
+          return
+        }
         // Chose the CLI: advance to the folder question in place (no launch yet).
         launchStep = 1
         renderBubble(current)
@@ -349,12 +411,14 @@ function renderBubble (state) {
   const qv = isQ ? questionAt(state, qIndex) : null
   const qcount = isQ ? questionCount(state) : 1
   // The question text used for buttons/records (no counter suffix).
-  const launchText = isLaunch ? (launchStep === 1 ? 'Where should Claude start?' : cfg.text) : cfg.text
+  const launchText = isLaunch ? (launchStep === 2 ? DESK_WARN_TEXT : (launchStep === 1 ? 'Where should Claude start?' : cfg.text)) : cfg.text
   const baseText = isNotice ? (state.message || cfg.text) : (isLaunch ? launchText : (isQ ? ((qv && qv.text) || cfg.text) : ((cfg.mode === 'status' && state.status) ? state.status : cfg.text)))
   // Show "(2/3)" when several sub-questions are queued so it's clear more follow.
   const text = (isQ && qcount > 1) ? (baseText + '  (' + (qIndex + 1) + '/' + qcount + ')') : baseText
   const qOpts = (qv && Array.isArray(qv.options) && qv.options.length) ? qv.options : ['Open Claude']
-  const optsForMeasure = isLaunch ? (launchStep === 1 ? LAUNCH_FOLDER_OPTS : LAUNCH_OPTS).map((o) => o.label) : (isQ ? qOpts : null)
+  const optsForMeasure = isLaunch
+    ? (launchStep === 2 ? DESK_WARN_OPT_LABELS : (launchStep === 1 ? LAUNCH_FOLDER_OPTS : LAUNCH_OPTS).map((o) => o.label))
+    : (isQ ? qOpts : null)
   const maxContent = Math.min(368, (display ? display.width : 800) - 80)
   const m = measureBubble(text, optsForMeasure)
   els.bubble.style.width = m.bw + 'px'
@@ -421,6 +485,7 @@ function showBubble () {
 function showLaunch () {
   current = { state: 'launch' }
   launchStep = 0
+  launchDeskDontShow = false
   setSprite(STATES.launch)
   measureSprite()
   clampAnchor()
@@ -536,6 +601,7 @@ if (isElectron) {
 // ---------- feeds ----------
 window.clawd.onEnv((env) => {
   display = env.display
+  if (env.prefs && typeof env.prefs === 'object') prefs = env.prefs
   measureSprite()
   if (anchorX == null) {
     if (env.pos && typeof env.pos.x === 'number' && typeof env.pos.y === 'number') { anchorX = env.pos.x; anchorY = env.pos.y }
@@ -563,6 +629,8 @@ window.clawd.onState((state) => {
   // A question stays up (persistent, driven by questionRevealed in reconcile) until answered.
   // Other non-default states auto-show for ~2s; default shows only on hover.
   if (isQ) { autoShow = false; clearTimeout(autoTimer) }
+  // An error is important and easy to miss -- keep it up longer than the usual 2s auto-show.
+  else if (state.state === 'error') { autoShow = true; clearTimeout(autoTimer); autoTimer = setTimeout(() => { autoShow = false; reconcile() }, 8000) }
   else if (state.state !== 'default') { autoShow = true; clearTimeout(autoTimer); autoTimer = setTimeout(() => { autoShow = false; reconcile() }, 2000) }
   else { autoShow = false; clearTimeout(autoTimer) }
   reconcile()

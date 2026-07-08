@@ -39,6 +39,15 @@ try {
   if (raw && raw.trim()) hook = JSON.parse(raw)
 } catch (e) { /* no stdin / not JSON */ }
 
+// SessionStart begins a NEW session. State files are keyed by cwd (see `sid` below), so a session
+// relaunched in the SAME folder reuses the previous session's file -- whose cached focus info
+// (pid/hwnd/consolePids) now points at the CLOSED terminal. Carrying that dead cache forward makes
+// main.js treat the fresh session as dead: isSessionAlive() sees only dead pids, filters the
+// session out of the display pool, so the widget IGNORES its hook events (stuck idle) and routes
+// clicks to the dead terminal (nothing happens). So on SessionStart we drop the stale focus cache
+// and force a fresh resolve. `--launch-widget` is passed only on SessionStart (see settings.json).
+const sessionStart = launchWidget || hook.hook_event_name === 'SessionStart'
+
 // A tool-permission prompt ("Do you want to proceed?") -- detected from the 'perm' arg
 // (PermissionRequest hook) OR from the payload itself, so the Notification path (current
 // session) also gets permission treatment. We do NOT fabricate options (the hook doesn't
@@ -138,6 +147,29 @@ if (isPermission && autoApproved) {
   process.exit(0)
 }
 
+// Error notifications (e.g. an API "401 authentication error", rate-limit, or other failure)
+// surface as a distinct ERROR state rather than the generic waiting/question bubble. Claude Code
+// delivers these via the Notification hook (which invokes this script with `question`), so detect
+// them from the payload text before the question/idle handling below claims the event. Not a
+// permission prompt, and never from a UserPromptSubmit reset (which starts a fresh turn).
+const notifText = [hook.message, hook.notification, hook.notification_type]
+  .filter((x) => typeof x === 'string').join(' ')
+const ERROR_RE = /\b(4\d{2}|5\d{2}|unauthorized|forbidden|authentication|auth error|api error|rate.?limit|overloaded|quota|invalid api key|failed|error)\b/i
+// AskUserQuestion carries its own structured questions/options in the payload; a question whose
+// text happens to contain "error" must NOT be misread as an error notification, so exclude it.
+const ti0 = hook.tool_input || hook.toolInput || {}
+const hasAskUI = Array.isArray(ti0.questions) && ti0.questions.length > 0
+const looksLikeError = (hook.hook_event_name === 'Notification' || state === 'question') &&
+  !isPermission && !reset && !hasAskUI && notifText && ERROR_RE.test(notifText)
+if (looksLikeError) {
+  const msg = String(hook.message || hook.notification || notifText).replace(/\s+/g, ' ').trim().slice(0, 160)
+  const out = { ...identity(cur), ...focusCache(cur), state: 'error', ts: Date.now() }
+  if (msg) out.status = msg
+  writeStateFile(out)
+  recordSession()
+  process.exit(0)
+}
+
 // An "idle" notification ("Claude is waiting for your input") means the turn is DONE, not
 // a question -- otherwise it clobbers "Task completed!" with a generic waiting bubble.
 // But if a REAL question is already pending, keep it (idle just means "answer it").
@@ -169,9 +201,11 @@ if (state === 'question' && isPermission && !reset && cur.state === 'question' &
 }
 
 const out = { sid, cwd, title, state, ts: Date.now() }
-// Carry forward this session's resolved focus cache (pid/hwnd/consolePids) so it survives
-// state writes; recordSession() refreshes it when needed.
-Object.assign(out, focusCache(cur))
+// Carry forward this session's resolved focus cache (pid/hwnd/consolePids) so it survives state
+// writes; recordSession() refreshes it when needed. EXCEPT on SessionStart, where the previous
+// session's cache is dead (see `sessionStart` above) -- dropping it lets recordSession re-resolve
+// the new terminal, and meanwhile main.js treats a session with no pids as alive (not filtered).
+if (!sessionStart) Object.assign(out, focusCache(cur))
 if (state === 'question') {
   // Tag the question with the tool that raised it (AskUserQuestion, or the tool being
   // permission-prompted). --after-tool uses this to clear ONLY the question of the tool that
@@ -262,9 +296,10 @@ function recordSession () {
   if (process.platform !== 'win32') return
   let cache = {}
   try { cache = JSON.parse(fs.readFileSync(FILE, 'utf8')) } catch (e) {}
-  // Permission prompts should not force a re-resolve (keeps the prompt snappy); only resolve
-  // on question/done, or whenever we lack a cached pid / console-client pids for this session.
-  let need = !isPermission && (state === 'question' || state === 'done')
+  // Permission prompts should not force a re-resolve (keeps the prompt snappy); resolve on
+  // question/done, on SessionStart (a fresh session whose stale cache we just dropped), or
+  // whenever we lack a cached pid / console-client pids for this session.
+  let need = !isPermission && (state === 'question' || state === 'done' || sessionStart)
   if (!need) need = !(Number.isFinite(cache.pid) && cache.pid > 0) || !(Array.isArray(cache.consolePids) && cache.consolePids.length)
   if (!need) return
   try {

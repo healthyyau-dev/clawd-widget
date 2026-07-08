@@ -15,12 +15,29 @@ const SPRITES = {
   working: 4,
   idea: 6,
   mascot: 22,
+  error: 12,
 };
 
+// Frame files don't all share one naming convention. The Figma round-trip frames use a
+// 2-digit, 0-indexed name with a duplicate suffix ("mascot_p03 1.svg"); the error frames
+// were exported 3-digit and 1-indexed with no suffix ("error_p001.svg"). Try the known
+// candidate names for frame i (0-based) and use whichever exists.
+function frameFile(name, i) {
+  const candidates = [
+    `${name}_p${String(i).padStart(2, '0')} 1.svg`,   // Figma duplicate: 0-indexed, 2-digit
+    `${name}_p${String(i).padStart(2, '0')}.svg`,      // clean export: 0-indexed, 2-digit
+    `${name}_p${String(i + 1).padStart(3, '0')}.svg`,  // error export: 1-indexed, 3-digit
+    `${name}_p${String(i + 1).padStart(2, '0')}.svg`,  // 1-indexed, 2-digit
+  ];
+  for (const c of candidates) {
+    const p = path.join(exportDir, c);
+    if (fs.existsSync(p)) return p;
+  }
+  return path.join(exportDir, candidates[0]); // fall back so the read error names the expected file
+}
+
 function readFrame(name, i) {
-  const n = String(i).padStart(2, '0');
-  const file = path.join(exportDir, `${name}_p${n} 1.svg`);
-  const svg = fs.readFileSync(file, 'utf8');
+  const svg = fs.readFileSync(frameFile(name, i), 'utf8');
   // Keep only the drawing <path> elements (own fills); drop svg/defs/clipPath/g.
   const paths = svg.match(/<path\b[^>]*\/>/g) || [];
   if (!paths.length) console.warn(`  ! ${name} p${i}: no <path> elements`);

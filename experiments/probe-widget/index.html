@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="sprites.css" />
+  <style>
+    html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
+      font-family: -apple-system, Segoe UI, sans-serif; -webkit-user-select: none; user-select: none; }
+    #panel { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin: 8px;
+      background: rgba(28,28,30,0.92); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; color: #eee; box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
+    #sprite-host { width: 64px; height: 64px; flex: 0 0 auto; display: flex; align-items: flex-end; justify-content: center; }
+    #sprite-host svg { height: 60px; width: auto; }
+    #sprite-host.dim { opacity: 0.35; filter: grayscale(1); }
+    #info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    #state { font-size: 18px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase; }
+    #state.working { color: #d97757; }
+    #state.question { color: #e6b800; }
+    #state.done { color: #5ac47d; }
+    #state.idle { color: #7bb; }
+    #state.unknown, #state.not-running { color: #999; }
+    #reason { font-size: 11px; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+    #hint { font-size: 10px; color: #666; }
+    #badge { position: absolute; top: 2px; right: 12px; font-size: 9px; color: #d97757; letter-spacing: 1px; }
+  </style>
+</head>
+<body>
+  <div id="badge">TEST BUILD</div>
+  <div id="panel">
+    <div id="sprite-host"></div>
+    <div id="info">
+      <div id="state">…</div>
+      <div id="reason"></div>
+      <div id="hint">right-click to quit</div>
+    </div>
+  </div>
+  <script src="sprites.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>

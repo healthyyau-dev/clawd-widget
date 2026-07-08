@@ -98,6 +98,28 @@ html, body {
 .opt.other { background: #efe2d6; color: var(--ink); }
 .opt.other:hover { background: #e6d6c7; }
 
+/* "Do not show this again" checkbox -- deliberately NOT button-styled (no fill/pill) so it
+   reads as a plain opt-out toggle beneath the two action buttons. */
+.opt-check {
+  display: flex; align-items: center; gap: 8px;
+  font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+  font-size: 13px; font-weight: 500;
+  color: #cfccc4;
+  background: none; border: none;
+  padding: 2px 2px; margin-top: 1px;
+  cursor: pointer;
+}
+.opt-check .box {
+  width: 15px; height: 15px; flex: 0 0 auto;
+  border: 1.5px solid #6b6b68; border-radius: 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; line-height: 1; color: var(--accent);
+}
+.opt-check:hover { color: #ECEAE3; }
+.opt-check:hover .box { border-color: #8a8a86; }
+.opt-check.checked { color: #ECEAE3; }
+.opt-check.checked .box { border-color: var(--accent); }
+
 @media (prefers-reduced-motion: reduce) {
   .bubble, .opt, .sprite-host { transition: none; animation: none; }
   .caret::after { animation: none; }

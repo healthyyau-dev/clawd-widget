@@ -24,5 +24,8 @@ contextBridge.exposeInMainWorld('clawd', {
   pickFolderAndLaunchCli: () => ipcRenderer.invoke('launch-cli-pick'),
   // CLI launch directly in the user's home folder (no picker).
   launchCliHome: () => ipcRenderer.send('launch-cli-home'),
+  // Persist a UI preference (e.g. suppressDesktopWarn from the Desktop launch confirmation's
+  // "don't show again"). Current prefs arrive with the initial env payload (onEnv).
+  setPref: (k, v) => ipcRenderer.send('set-pref', { k, v }),
   onLaunchPrompt: (cb) => ipcRenderer.on('show-launch', () => cb())
 })
