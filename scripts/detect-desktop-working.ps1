@@ -89,21 +89,29 @@ function Get-Buttons([IntPtr]$hwnd) {
     [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
     [System.Windows.Automation.ControlType]::Button)
   $out = New-Object System.Collections.ArrayList
-  for ($try = 0; $try -lt 5; $try++) {
+  for ($try = 0; $try -lt 10; $try++) {
     $out.Clear()
     $rendered = $false
     $els = $root.FindAll([System.Windows.Automation.TreeScope]::Subtree, $cond)
     foreach ($e in $els) {
       $aid = $e.Current.AutomationId
-      if ($aid -like 'base-ui*') { $rendered = $true }
+      $nm = ('' + $e.Current.Name)
+      # "Rendered" must mean the COMPOSER / conversation region is present -- NOT merely any
+      # base-ui* button. The Cowork/Code sidebar carries persistent base-ui* buttons ("More
+      # options for <chat>", etc.), so the old `$aid -like 'base-ui*'` test passed on a
+      # sidebar-only tree while the composer pane had not yet rendered. Classify then saw no
+      # stop/queue/composer -> returned 'unknown', and the widget (main.js: unknown => keep
+      # current state) stayed stuck on 'working' after a backgrounded task finished. Key
+      # "rendered" on an actual composer/turn affordance so we wait for the real chat UI.
+      if ($nm -match '(?i)add files, connectors|press and hold to record|^send|stop\s*(response|generating|task)|queue message|^(always allow|allow once|allow|approve|accept|run|deny|reject|decline|skip)$') { $rendered = $true }
       [void]$out.Add([pscustomobject]@{
-        Name    = $e.Current.Name
+        Name    = $nm
         AutoId  = $aid
         Enabled = $e.Current.IsEnabled
       })
     }
     if ($rendered) { break }
-    Start-Sleep -Milliseconds 200
+    Start-Sleep -Milliseconds 250
   }
   return $out
 }
@@ -141,7 +149,12 @@ function Classify($buttons) {
   $hasSkip = $false
   foreach ($b in $buttons) {
     $n = ('' + $b.Name); $a = ('' + $b.AutoId)
-    if ($n -match '(?i)stop\s*response' -or ($n -match '(?i)\bstop\b')) { $hasStop = $true; $stopName = $n }
+    # Live-generation signal = the composer's "Stop response" button (also "Stop generating"/
+    # "Stop task"/a lone "Stop" in some modes). Do NOT match confirmation buttons that merely
+    # contain the word "stop" -- e.g. "No, stop" / "Yes, stop and revert" are yes/no dialog
+    # CHOICES, not a generating indicator. The old broad \bstop\b caught "No, stop" and left the
+    # widget stuck on 'working' after a Cowork task ended (composer already back).
+    if ($n -match '(?i)stop\s*(response|generating|task)' -or $n -match '(?i)^\s*stop\s*$') { $hasStop = $true; $stopName = $n }
     if ($n -match '(?i)queue message') { $hasQueue = $true }
     if ($n -match '(?i)add files, connectors' -or $n -match '(?i)press and hold to record' -or $n -match '(?i)^send') { $hasComposer = $true }
     # Permission / approval gate: the composer shows an allow/deny pair while a tool

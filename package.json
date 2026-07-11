@@ -43,7 +43,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Clawd",
-      "artifactName": "Clawd Setup.exe"
+      "artifactName": "Clawd.exe"
     },
     "mac": {
       "target": [

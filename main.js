@@ -112,6 +112,7 @@ let deskShown = 'off'              // debounced state we expose: off|working|que
 let deskPrevMeaningful = null      // last of working|question|idle, for the done-edge inference
 let deskDoneUntil = 0              // 'done' shows until this timestamp (working/question -> idle edge)
 let deskIdleStreak = 0             // consecutive idle polls; a lone idle mid-generation is ignored
+let deskUnknownStreak = 0          // consecutive 'unknown' polls; a sustained run after working => finished
 let deskHwnd = 0                   // Desktop window handle from the probe (used to raise it on click)
 let deskStateSince = 0             // when deskShown last CHANGED -- the desktop candidate's "activity started" ts,
                                    // used for the most-recent-wins tiebreak (NOT poll time, which would always be newest)
@@ -144,6 +145,12 @@ function pollDesktop () {
 //                         still be working behind a hidden window, so we must not call it idle).
 //   not-running        -> desktop gone: clear to 'off'.
 const DESK_IDLE_CONFIRM = 2
+// After this many CONSECUTIVE 'unknown' polls while we're showing working/question, treat the task
+// as finished. A live generation keeps the composer rendered, so it yields reliable 'working' reads;
+// a sustained all-'unknown' stretch means the signal is gone (window minimized, or the composer pane
+// stopped rendering once idle+backgrounded). Holding 'working' through that was the "stuck when
+// Desktop done" bug. ~4 polls * DESK_POLL_MS (2.5s) = ~10s before we conclude done.
+const DESK_UNKNOWN_DONE = 4
 function onDeskProbe (stdout) {
   let r
   try { r = JSON.parse(String(stdout || '').trim()) } catch (e) { r = { state: 'unknown' } }
@@ -152,10 +159,23 @@ function onDeskProbe (stdout) {
   if (Number.isFinite(r && r.hwnd)) deskHwnd = Number(r.hwnd) || deskHwnd
   const before = deskShown
   // App gone -> no lingering "completed" pose for a Desktop that no longer exists.
-  if (raw === 'not-running') { deskShown = 'off'; deskPrevMeaningful = null; deskIdleStreak = 0; deskHwnd = 0; deskDoneUntil = 0 }
-  else if (raw === 'unknown') { /* no signal -- leave deskShown unchanged */ }
+  if (raw === 'not-running') { deskShown = 'off'; deskPrevMeaningful = null; deskIdleStreak = 0; deskUnknownStreak = 0; deskHwnd = 0; deskDoneUntil = 0 }
+  else if (raw === 'unknown') {
+    // Normally 'unknown' = "no signal, keep the current state" (window minimized, tree not rendered).
+    // But if we've been showing working/question and 'unknown' persists, the task has almost
+    // certainly finished -- otherwise a live generation would keep yielding 'working'. Arm the done
+    // pose and drop to idle so we don't stay pinned on 'working' until the user focuses Desktop.
+    deskUnknownStreak++
+    if ((deskPrevMeaningful === 'working' || deskPrevMeaningful === 'question') && deskUnknownStreak >= DESK_UNKNOWN_DONE) {
+      deskDoneUntil = now + DESK_DONE_MS
+      deskShown = 'idle'
+      deskPrevMeaningful = 'idle'
+      deskIdleStreak = 0
+    }
+  }
   else if (raw === 'idle') {
     deskIdleStreak++
+    deskUnknownStreak = 0
     // Ignore a lone idle between working polls; require DESK_IDLE_CONFIRM in a row to go idle.
     if (deskIdleStreak >= DESK_IDLE_CONFIRM || !(deskPrevMeaningful === 'working' || deskPrevMeaningful === 'question')) {
       if (deskPrevMeaningful === 'working' || deskPrevMeaningful === 'question') deskDoneUntil = now + DESK_DONE_MS
@@ -164,6 +184,7 @@ function onDeskProbe (stdout) {
     }
   } else { // working | question
     deskIdleStreak = 0
+    deskUnknownStreak = 0
     deskShown = raw
     deskPrevMeaningful = raw
   }
@@ -178,6 +199,15 @@ function onDeskProbe (stdout) {
   // candidate done->idle without changing deskShown). Natural time-based expiry of the done window is
   // settled by the 1s pushState poll.
   if (changed || acknowledged) pushState()
+  // Diagnostic: trace the probe pipeline so a "stuck" report can be confirmed from main.log.
+  // Only log when something moved (raw differs from shown, a streak is building, or we pushed) to
+  // avoid spamming the log on every steady 2.5s poll.
+  if (changed || acknowledged || raw !== before || deskUnknownStreak > 0) {
+    dbg('deskProbe raw=' + raw + ' shown=' + deskShown + ' prev=' + deskPrevMeaningful +
+        ' idleStk=' + deskIdleStreak + ' unkStk=' + deskUnknownStreak +
+        ' fg=' + (r && r.fg === true) + ' doneUntil=' + (deskDoneUntil ? (deskDoneUntil - now) + 'ms' : '0') +
+        (changed ? ' CHANGED(' + before + '->' + deskShown + ')' : '') + (acknowledged ? ' ACK' : ''))
+  }
 }
 
 // The desktop's contribution to the display pool, or null when it shouldn't compete. Returns a
