@@ -1,40 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 35 34" shape-rendering="crispEdges">
-<g class="p0">
-    <rect x="4" y="17" width="17" height="1" fill="#e47c50"/>
-    <rect x="4" y="18" width="17" height="1" fill="#e47c50"/>
-    <rect x="4" y="19" width="2" height="1" fill="#e47c50"/>
-    <rect x="6" y="19" width="3" height="1" fill="#040000"/>
-    <rect x="9" y="19" width="8" height="1" fill="#e47c50"/>
-    <rect x="17" y="19" width="2" height="1" fill="#040000"/>
-    <rect x="19" y="19" width="2" height="1" fill="#e47c50"/>
-    <rect x="4" y="20" width="2" height="1" fill="#e47c50"/>
-    <rect x="6" y="20" width="3" height="1" fill="#040000"/>
-    <rect x="9" y="20" width="8" height="1" fill="#e47c50"/>
-    <rect x="17" y="20" width="2" height="1" fill="#040000"/>
-    <rect x="19" y="20" width="2" height="1" fill="#e47c50"/>
-    <rect x="0" y="21" width="25" height="1" fill="#e47c50"/>
-    <rect x="0" y="22" width="25" height="1" fill="#e47c50"/>
-    <rect x="0" y="23" width="25" height="1" fill="#e47c50"/>
-    <rect x="0" y="24" width="25" height="1" fill="#e47c50"/>
-    <rect x="4" y="25" width="17" height="1" fill="#e47c50"/>
-    <rect x="4" y="26" width="17" height="1" fill="#e47c50"/>
-    <rect x="4" y="27" width="17" height="1" fill="#e47c50"/>
-    <rect x="4" y="28" width="17" height="1" fill="#e47c50"/>
-    <rect x="4" y="29" width="2" height="1" fill="#e47c50"/>
-    <rect x="8" y="29" width="2" height="1" fill="#e47c50"/>
-    <rect x="15" y="29" width="2" height="1" fill="#e47c50"/>
-    <rect x="19" y="29" width="2" height="1" fill="#e47c50"/>
-    <rect x="4" y="30" width="2" height="1" fill="#e47c50"/>
-    <rect x="8" y="30" width="2" height="1" fill="#e47c50"/>
-    <rect x="15" y="30" width="2" height="1" fill="#e47c50"/>
-    <rect x="19" y="30" width="2" height="1" fill="#e47c50"/>
-    <rect x="4" y="31" width="2" height="1" fill="#e47c50"/>
-    <rect x="8" y="31" width="2" height="1" fill="#e47c50"/>
-    <rect x="15" y="31" width="2" height="1" fill="#e47c50"/>
-    <rect x="19" y="31" width="2" height="1" fill="#e47c50"/>
-    <rect x="4" y="32" width="2" height="1" fill="#e47c50"/>
-    <rect x="8" y="32" width="2" height="1" fill="#e47c50"/>
-    <rect x="15" y="32" width="2" height="1" fill="#e47c50"/>
-    <rect x="19" y="32" width="2" height="1" fill="#e47c50"/>
-  </g>
+<svg width="35" height="34" viewBox="0 0 35 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M26 11H9V12H26V11Z" fill="#E47C50"/>
+<path d="M26 12H9V13H26V12Z" fill="#E47C50"/>
+<path d="M11 13H9V14H11V13Z" fill="#E47C50"/>
+<path d="M13 13H11V14H13V13Z" fill="#040000"/>
+<path d="M22 13H13V14H22V13Z" fill="#E47C50"/>
+<path d="M24 13H22V14H24V13Z" fill="#040000"/>
+<path d="M26 13H24V14H26V13Z" fill="#E47C50"/>
+<path d="M11 14H9V15H11V14Z" fill="#E47C50"/>
+<path d="M13 14H11V15H13V14Z" fill="#040000"/>
+<path d="M22 14H13V15H22V14Z" fill="#E47C50"/>
+<path d="M24 14H22V15H24V14Z" fill="#040000"/>
+<path d="M26 14H24V15H26V14Z" fill="#E47C50"/>
+<path d="M30 15H5V16H30V15Z" fill="#E47C50"/>
+<path d="M30 16H5V17H30V16Z" fill="#E47C50"/>
+<path d="M30 17H5V18H30V17Z" fill="#E47C50"/>
+<path d="M30 18H5V19H30V18Z" fill="#E47C50"/>
+<path d="M26 19H9V20H26V19Z" fill="#E47C50"/>
+<path d="M26 20H9V21H26V20Z" fill="#E47C50"/>
+<path d="M26 21H9V22H26V21Z" fill="#E47C50"/>
+<path d="M26 22H9V23H26V22Z" fill="#E47C50"/>
+<path d="M11 23H9V24H11V23Z" fill="#E47C50"/>
+<path d="M15 23H13V24H15V23Z" fill="#E47C50"/>
+<path d="M22 23H20V24H22V23Z" fill="#E47C50"/>
+<path d="M26 23H24V24H26V23Z" fill="#E47C50"/>
+<path d="M11 24H9V25H11V24Z" fill="#E47C50"/>
+<path d="M15 24H13V25H15V24Z" fill="#E47C50"/>
+<path d="M22 24H20V25H22V24Z" fill="#E47C50"/>
+<path d="M26 24H24V25H26V24Z" fill="#E47C50"/>
+<path d="M11 25H9V26H11V25Z" fill="#E47C50"/>
+<path d="M15 25H13V26H15V25Z" fill="#E47C50"/>
+<path d="M22 25H20V26H22V25Z" fill="#E47C50"/>
+<path d="M26 25H24V26H26V25Z" fill="#E47C50"/>
+<path d="M11 26H9V27H11V26Z" fill="#E47C50"/>
+<path d="M15 26H13V27H15V26Z" fill="#E47C50"/>
+<path d="M22 26H20V27H22V26Z" fill="#E47C50"/>
+<path d="M26 26H24V27H26V26Z" fill="#E47C50"/>
 </svg>
